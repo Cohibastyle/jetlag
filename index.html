@@ -1,0 +1,1576 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Jet Lag Recovery System</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --amber:        #FFB800;
+        --amber-bright: #FFD060;
+        --amber-dim:    rgba(255, 184, 0, 0.4);
+        --teal:         #00E5CC;
+        --teal-dim:     rgba(0, 229, 204, 0.3);
+        --text:         #EAE0CC;
+        --text-muted:   rgba(234, 224, 204, 0.55);
+        --danger:       #FF5555;
+        --panel-bg:     rgba(6, 12, 26, 0.87);
+        --panel-border: rgba(255, 184, 0, 0.28);
+        --panel-radius: 14px;
+        --shadow:       0 8px 32px rgba(0, 0, 0, 0.6);
+        --glow:         0 0 20px rgba(255, 184, 0, 0.15);
+      }
+
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+
+      body {
+        background: #080D1A;
+        font-family: "Space Grotesk", "Avenir Next", "Segoe UI", sans-serif;
+        color: var(--text);
+        min-height: 100vh;
+        overflow-x: hidden;
+      }
+
+      /* ── Sky Canvas ── */
+      #sky-canvas {
+        position: fixed;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 0;
+      }
+
+      /* ── Cockpit HUD overlay ── */
+      .cockpit-hud {
+        position: fixed;
+        inset: 0;
+        z-index: 1;
+        pointer-events: none;
+      }
+      .hud-corner {
+        position: absolute;
+        width: 60px;
+        height: 60px;
+        opacity: 0.55;
+      }
+      .hud-corner--tl { top: 12px; left: 12px;   border-top: 2px solid var(--amber); border-left:  2px solid var(--amber); }
+      .hud-corner--tr { top: 12px; right: 12px;  border-top: 2px solid var(--amber); border-right: 2px solid var(--amber); }
+      .hud-corner--bl { bottom: 12px; left: 12px;  border-bottom: 2px solid var(--amber); border-left:  2px solid var(--amber); }
+      .hud-corner--br { bottom: 12px; right: 12px; border-bottom: 2px solid var(--amber); border-right: 2px solid var(--amber); }
+
+      /* ── Page wrapper ── */
+      .page {
+        position: relative;
+        z-index: 2;
+        max-width: 1060px;
+        margin: 0 auto;
+        padding: 20px 16px 40px;
+        animation: rise 360ms ease-out;
+      }
+      @keyframes rise {
+        from { opacity: 0; transform: translateY(8px); }
+        to   { opacity: 1; transform: translateY(0);   }
+      }
+
+      /* ── Panel base ── */
+      .panel {
+        position: relative;
+        background: var(--panel-bg);
+        border: 1px solid var(--panel-border);
+        border-radius: var(--panel-radius);
+        box-shadow: var(--shadow), var(--glow);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        overflow: hidden;
+      }
+      .panel::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        z-index: 10;
+        background: repeating-linear-gradient(
+          0deg,
+          transparent 0px, transparent 2px,
+          rgba(0, 0, 0, 0.07) 2px, rgba(0, 0, 0, 0.07) 3px
+        );
+        border-radius: inherit;
+      }
+
+      /* ── Panel label ── */
+      .panel-label {
+        font-family: "IBM Plex Mono", ui-monospace, monospace;
+        font-size: 0.62rem;
+        letter-spacing: 0.18em;
+        color: var(--amber);
+        text-transform: uppercase;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid var(--panel-border);
+        margin-bottom: 14px;
+      }
+      .panel-label::before {
+        content: "";
+        display: inline-block;
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--amber);
+        box-shadow: 0 0 8px var(--amber);
+        flex-shrink: 0;
+      }
+
+      /* ── Header ── */
+      .panel-header {
+        padding: 14px 20px;
+        margin-bottom: 12px;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        flex-wrap: wrap;
+      }
+      .header-icon {
+        font-size: 1.9rem;
+        line-height: 1;
+        filter: drop-shadow(0 0 10px var(--amber));
+        flex-shrink: 0;
+      }
+      .header-text { flex: 1; min-width: 0; }
+      .header-text h1 {
+        font-size: clamp(1.05rem, 2.4vw, 1.65rem);
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        color: var(--text);
+        line-height: 1.15;
+      }
+      .header-text .subtitle {
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 0.65rem;
+        letter-spacing: 0.15em;
+        color: var(--text-muted);
+        margin-top: 3px;
+        text-transform: uppercase;
+      }
+      .weather-badge {
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 0.65rem;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--amber);
+        border: 1px solid var(--amber-dim);
+        border-radius: 6px;
+        padding: 5px 10px;
+        background: rgba(255, 184, 0, 0.06);
+        transition: color 0.5s, border-color 0.5s, background 0.5s;
+        flex-shrink: 0;
+        white-space: nowrap;
+      }
+      .weather-badge.stormy {
+        color: #FF8888;
+        border-color: rgba(255, 80, 80, 0.5);
+        background: rgba(255, 80, 80, 0.07);
+      }
+
+      /* ── Main grid ── */
+      .main-grid {
+        display: grid;
+        grid-template-columns: 1.15fr 1fr;
+        gap: 12px;
+        margin-bottom: 12px;
+        align-items: start;
+      }
+
+      /* ── Controls panel ── */
+      .panel-controls { padding: 16px 18px; }
+      .controls-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+      .field {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+        position: relative;
+      }
+      .field-wide { grid-column: 1 / -1; }
+
+      label {
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 0.65rem;
+        font-weight: 600;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--text-muted);
+      }
+
+      input[type="text"],
+      input[type="time"] {
+        width: 100%;
+        background: rgba(255, 184, 0, 0.06);
+        border: 1px solid rgba(255, 184, 0, 0.22);
+        border-radius: 8px;
+        padding: 9px 11px;
+        font-family: inherit;
+        font-size: 0.88rem;
+        color: var(--text);
+        outline: none;
+        transition: border-color 0.2s, box-shadow 0.2s;
+        -webkit-appearance: none;
+      }
+      input[type="text"]:focus,
+      input[type="time"]:focus {
+        border-color: var(--amber);
+        box-shadow: 0 0 0 2px rgba(255, 184, 0, 0.18);
+      }
+      input[type="time"]::-webkit-calendar-picker-indicator {
+        filter: invert(1) sepia(1) saturate(4) hue-rotate(0deg);
+        opacity: 0.45;
+        cursor: pointer;
+      }
+
+      /* ── Suggestions ── */
+      .suggestions {
+        position: absolute;
+        top: calc(100% + 4px);
+        left: 0;
+        right: 0;
+        background: rgba(8, 14, 28, 0.97);
+        border: 1px solid rgba(255, 184, 0, 0.35);
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 16px 32px rgba(0, 0, 0, 0.7);
+        max-height: 220px;
+        overflow-y: auto;
+        z-index: 100;
+      }
+      .suggestion-item {
+        padding: 9px 12px;
+        cursor: pointer;
+        border-bottom: 1px solid rgba(255, 184, 0, 0.08);
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 0.82rem;
+        color: var(--text);
+        transition: background 0.12s;
+      }
+      .suggestion-item:last-child { border-bottom: 0; }
+      .suggestion-item.active,
+      .suggestion-item:hover { background: rgba(255, 184, 0, 0.1); color: var(--amber-bright); }
+
+      .selected-chip {
+        margin-top: 4px;
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 0.75rem;
+        color: var(--teal);
+        background: rgba(0, 229, 204, 0.08);
+        border: 1px solid rgba(0, 229, 204, 0.25);
+        border-radius: 999px;
+        padding: 3px 10px;
+        display: inline-block;
+      }
+
+      /* ── Slider section ── */
+      .slider-section {
+        border-top: 1px solid var(--panel-border);
+        margin-top: 14px;
+        padding-top: 14px;
+      }
+      .slider-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 7px;
+      }
+      .slider-lbl {
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 0.62rem;
+        letter-spacing: 0.06em;
+        color: var(--text-muted);
+        white-space: nowrap;
+        flex-shrink: 0;
+      }
+      input[type="range"] {
+        -webkit-appearance: none;
+        flex: 1;
+        height: 4px;
+        border-radius: 2px;
+        background: linear-gradient(to right, var(--teal) 50%, rgba(255,255,255,0.12) 50%);
+        outline: none;
+        padding: 0;
+        border: none;
+        cursor: pointer;
+      }
+      input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: radial-gradient(circle at 35% 35%, #FFD060, #FFB800 60%, #CC8800);
+        box-shadow: 0 0 0 3px rgba(255,184,0,0.2), 0 0 14px rgba(255,184,0,0.55);
+        cursor: pointer;
+        transition: box-shadow 0.2s;
+      }
+      input[type="range"]::-moz-range-thumb {
+        width: 18px;
+        height: 18px;
+        border: none;
+        border-radius: 50%;
+        background: radial-gradient(circle at 35% 35%, #FFD060, #FFB800 60%, #CC8800);
+        box-shadow: 0 0 0 3px rgba(255,184,0,0.2), 0 0 14px rgba(255,184,0,0.55);
+        cursor: pointer;
+      }
+      input[type="range"]:focus::-webkit-slider-thumb {
+        box-shadow: 0 0 0 4px rgba(255,184,0,0.3), 0 0 20px rgba(255,184,0,0.7);
+      }
+      .aggressiveness-display {
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 0.78rem;
+        color: var(--amber-bright);
+        letter-spacing: 0.04em;
+        min-height: 1.2em;
+      }
+
+      /* ── Error ── */
+      .error-banner {
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 0.78rem;
+        color: var(--danger);
+        background: rgba(255, 85, 85, 0.08);
+        border: 1px solid rgba(255, 85, 85, 0.3);
+        border-radius: 8px;
+        padding: 8px 11px;
+        margin-top: 12px;
+        min-height: 36px;
+      }
+      .error-banner:empty { display: none; }
+
+      /* ── Summary panel ── */
+      .panel-summary { padding: 16px 18px; }
+      .summary-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+      }
+      .stat-tile {
+        border: 1px solid rgba(255, 184, 0, 0.18);
+        border-radius: 10px;
+        padding: 10px 12px;
+        background: rgba(255, 184, 0, 0.04);
+      }
+      .stat-tile small {
+        display: block;
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 0.6rem;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--text-muted);
+        margin-bottom: 5px;
+      }
+      .stat-tile strong {
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 1.1rem;
+        color: var(--teal);
+        display: block;
+      }
+
+      /* ── Table panel ── */
+      .panel-table { padding: 16px 18px; }
+      .empty-state {
+        padding: 18px;
+        border: 1px dashed rgba(255, 184, 0, 0.25);
+        border-radius: 10px;
+        background: rgba(255, 184, 0, 0.03);
+        color: var(--text-muted);
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 0.8rem;
+        text-align: center;
+        line-height: 1.6;
+      }
+      .table-wrap { overflow-x: auto; }
+      table { width: 100%; border-collapse: collapse; }
+      th, td {
+        border-bottom: 1px solid rgba(255, 184, 0, 0.1);
+        text-align: left;
+        padding: 9px 8px;
+      }
+      th {
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 0.63rem;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--text-muted);
+      }
+      td {
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 0.84rem;
+        color: var(--teal);
+      }
+      td:last-child { color: var(--text-muted); font-size: 0.78rem; }
+      tbody tr { animation: fadeSlide 180ms ease; }
+      tbody tr:hover td { background: rgba(255, 184, 0, 0.04); }
+      @keyframes fadeSlide {
+        from { opacity: 0; transform: translateY(2px); }
+        to   { opacity: 1; transform: translateY(0);   }
+      }
+      .footer-note {
+        margin-top: 12px;
+        color: var(--text-muted);
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 0.67rem;
+        letter-spacing: 0.06em;
+        text-align: center;
+      }
+
+      /* ── Responsive ── */
+      @media (max-width: 860px) {
+        .main-grid { grid-template-columns: 1fr; }
+      }
+      @media (max-width: 600px) {
+        .page { padding: 10px 10px 28px; }
+        .panel-header { padding: 10px 14px; gap: 8px; }
+        .header-text h1 { font-size: 1rem; }
+        .header-text .subtitle { display: none; }
+        .panel-controls,
+        .panel-summary,
+        .panel-table { padding: 11px 13px; }
+        .field-wide { grid-column: 1 / -1; }
+        .stat-tile strong { font-size: 0.9rem; }
+        .stat-tile small { font-size: 0.55rem; }
+        .weather-badge { font-size: 0.58rem; padding: 4px 8px; }
+        .hud-corner { width: 36px; height: 36px; }
+        .panel-label { font-size: 0.58rem; }
+        label { font-size: 0.6rem; }
+        input[type="text"],
+        input[type="time"] { font-size: 0.82rem; padding: 7px 9px; }
+        .aggressiveness-display { font-size: 0.7rem; }
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="sky-canvas"></canvas>
+
+    <div class="cockpit-hud" aria-hidden="true">
+      <div class="hud-corner hud-corner--tl"></div>
+      <div class="hud-corner hud-corner--tr"></div>
+      <div class="hud-corner hud-corner--bl"></div>
+      <div class="hud-corner hud-corner--br"></div>
+    </div>
+
+    <main class="page">
+
+      <!-- Header -->
+      <header class="panel panel-header">
+        <div class="header-icon">&#9992;</div>
+        <div class="header-text">
+          <h1>Jet Lag Recovery System</h1>
+          <p class="subtitle">JL&#8209;01 &middot; Route Adaptation Timeline Generator</p>
+        </div>
+        <div id="weather-badge" class="weather-badge">CLEAR</div>
+      </header>
+
+      <!-- Controls + Summary grid -->
+      <div class="main-grid" aria-live="polite">
+
+        <!-- Controls -->
+        <div class="panel panel-controls">
+          <div class="panel-label">Flight Parameters</div>
+          <div class="controls-grid">
+
+            <div class="field field-wide">
+              <label for="origin-input">Origin</label>
+              <input id="origin-input" type="text" autocomplete="off" placeholder="City or airport code"
+                     role="combobox" aria-expanded="false" aria-controls="origin-list" />
+              <div id="origin-list" class="suggestions" role="listbox" hidden></div>
+              <div id="origin-chip" class="selected-chip" hidden></div>
+            </div>
+
+            <div class="field field-wide">
+              <label for="destination-input">Destination</label>
+              <input id="destination-input" type="text" autocomplete="off" placeholder="City or airport code"
+                     role="combobox" aria-expanded="false" aria-controls="destination-list" />
+              <div id="destination-list" class="suggestions" role="listbox" hidden></div>
+              <div id="destination-chip" class="selected-chip" hidden></div>
+            </div>
+
+            <div class="field">
+              <label for="bedtime-input">Bedtime</label>
+              <input id="bedtime-input" type="time" value="23:00" />
+            </div>
+
+            <div class="field">
+              <label for="wake-input">Wake Time</label>
+              <input id="wake-input" type="time" value="07:00" />
+            </div>
+
+          </div>
+
+          <div class="slider-section">
+            <div class="panel-label">Recovery Profile</div>
+            <div class="slider-row">
+              <span class="slider-lbl">Gentle</span>
+              <input id="aggressiveness-input" type="range" min="1" max="5" step="0.04" value="3" />
+              <span class="slider-lbl">Aggressive</span>
+            </div>
+            <div class="aggressiveness-display" id="aggressiveness-label"></div>
+          </div>
+
+          <div id="error" class="error-banner" role="alert" aria-live="assertive"></div>
+        </div>
+
+        <!-- Summary -->
+        <div class="panel panel-summary">
+          <div class="panel-label">Flight Analysis</div>
+          <div class="summary-grid">
+            <div class="stat-tile">
+              <small>TZ Difference (raw)</small>
+              <strong id="raw-offset">&#8212;</strong>
+            </div>
+            <div class="stat-tile">
+              <small>Adjustment Used</small>
+              <strong id="effective-offset">&#8212;</strong>
+            </div>
+            <div class="stat-tile">
+              <small>Adaptation Days</small>
+              <strong id="adapt-days">&#8212;</strong>
+            </div>
+            <div class="stat-tile">
+              <small>Destination TZ</small>
+              <strong id="destination-zone" style="font-size:0.68rem; word-break:break-all;">&#8212;</strong>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Schedule Table -->
+      <section class="panel panel-table">
+        <div class="panel-label">Destination-Time Sleep Plan</div>
+        <div id="empty" class="empty-state">
+          Select valid origin and destination plus sleep / wake times to generate your timeline.
+        </div>
+        <div class="table-wrap" id="table-wrap" hidden>
+          <table>
+            <thead>
+              <tr>
+                <th>Day</th>
+                <th>Bedtime</th>
+                <th>Wake Time</th>
+                <th>Shift Note</th>
+              </tr>
+            </thead>
+            <tbody id="schedule-body"></tbody>
+          </table>
+        </div>
+        <p class="footer-note">Informational guidance only &mdash; not medical advice.</p>
+      </section>
+
+    </main>
+
+    <script>
+      // ── Weather Sky Animation ────────────────────────────────────────────────
+      (function () {
+        const canvas = document.getElementById('sky-canvas');
+        const ctx = canvas.getContext('2d');
+        let W, H;
+        function resize() { W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; }
+        resize();
+        window.addEventListener('resize', resize);
+
+        function lerp(a, b, t) { return a + (b - a) * t; }
+        function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+        function getT() { return (Number(document.getElementById('aggressiveness-input').value) - 1) / 4; }
+
+        function colorAt(stops, t) {
+          if (t <= stops[0][0]) return stops[0][1];
+          if (t >= stops[stops.length - 1][0]) return stops[stops.length - 1][1];
+          for (let i = 0; i < stops.length - 1; i++) {
+            const [t0, c0] = stops[i], [t1, c1] = stops[i + 1];
+            if (t >= t0 && t <= t1) {
+              const f = (t - t0) / (t1 - t0);
+              return c0.map((v, j) => Math.round(lerp(v, c1[j], f)));
+            }
+          }
+          return stops[stops.length - 1][1];
+        }
+
+        // Sky colour stops: [0=sunny blue, 0.25=partly cloudy, 0.5=overcast, 0.75=storm, 1=deep storm]
+        const SKY_TOP    = [[0,[30,90,170]],[0.25,[50,80,130]],[0.5,[55,65,88]],[0.75,[28,35,55]],[1,[12,14,28]]];
+        const SKY_BOTTOM = [[0,[100,180,230]],[0.25,[110,155,195]],[0.5,[90,105,130]],[0.75,[45,55,75]],[1,[18,22,42]]];
+
+        // ── Clouds ──────────────────────────────────────────────────────────────
+        const NUM_CLOUDS = 22;
+        function makeCloud(initial) {
+          return {
+            x:     initial ? Math.random() * (W + 600) - 200 : W + 150 + Math.random() * 200,
+            y:     Math.random() * (H * 0.55) + H * 0.02,
+            scale: 0.5 + Math.random() * 1.5,
+            speed: 0.1 + Math.random() * 0.25,
+            alpha: 0.35 + Math.random() * 0.5,
+          };
+        }
+        const clouds = Array.from({ length: NUM_CLOUDS }, () => makeCloud(true));
+
+        function drawCloud(cx, cy, scale, brightness, alpha) {
+          if (alpha <= 0.01) return;
+          const puffs = [
+            { ox:   0, oy:   0, rx: 70, ry: 45 },
+            { ox:  55, oy: -18, rx: 55, ry: 40 },
+            { ox: -55, oy: -14, rx: 50, ry: 36 },
+            { ox:  30, oy:  12, rx: 55, ry: 35 },
+            { ox: -30, oy:  15, rx: 48, ry: 30 },
+            { ox:  80, oy:   5, rx: 38, ry: 26 },
+            { ox: -80, oy:   5, rx: 36, ry: 24 },
+          ];
+          ctx.save();
+          ctx.translate(cx, cy);
+          ctx.scale(scale, scale * 0.68);
+          for (const p of puffs) {
+            const grd = ctx.createRadialGradient(
+              p.ox, p.oy - p.ry * 0.15, 0,
+              p.ox, p.oy, Math.max(p.rx, p.ry) * 1.15
+            );
+            const b = Math.floor(brightness);
+            grd.addColorStop(0,   `rgba(${b},${b},${b},${alpha * 0.9})`);
+            grd.addColorStop(0.5, `rgba(${b},${b},${b},${alpha * 0.45})`);
+            grd.addColorStop(1,   `rgba(${b},${b},${b},0)`);
+            ctx.fillStyle = grd;
+            ctx.beginPath();
+            ctx.ellipse(p.ox, p.oy, p.rx, p.ry, 0, 0, Math.PI * 2);
+            ctx.fill();
+          }
+          ctx.restore();
+        }
+
+        // ── Rain ────────────────────────────────────────────────────────────────
+        const MAX_DROPS = 320;
+        function makeDrop(initial) {
+          return {
+            x:     Math.random() * (W || window.innerWidth),
+            y:     initial ? Math.random() * (H || window.innerHeight) : -20,
+            len:   8 + Math.random() * 14,
+            speed: 14 + Math.random() * 10,
+            alpha: 0.2 + Math.random() * 0.45,
+          };
+        }
+        const drops = Array.from({ length: MAX_DROPS }, () => makeDrop(true));
+
+        // ── Lightning ───────────────────────────────────────────────────────────
+        let ltAlpha = 0, ltTimer = 0, ltPoints = [];
+        function newLightning() {
+          ltAlpha = 1;
+          ltPoints = [];
+          let x = W * 0.2 + Math.random() * W * 0.6, y = 0;
+          while (y < H * 0.72) {
+            ltPoints.push([x, y]);
+            x += (Math.random() - 0.45) * 55;
+            y += 14 + Math.random() * 22;
+          }
+        }
+        function drawLightningBolt() {
+          if (ltAlpha <= 0 || ltPoints.length < 2) return;
+          ctx.fillStyle = `rgba(190, 215, 255, ${ltAlpha * 0.18})`;
+          ctx.fillRect(0, 0, W, H);
+          ctx.save();
+          ctx.shadowColor = 'rgba(120, 180, 255, 1)';
+          ctx.shadowBlur = 22;
+          ctx.strokeStyle = `rgba(220, 240, 255, ${ltAlpha})`;
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.moveTo(ltPoints[0][0], ltPoints[0][1]);
+          ltPoints.forEach(([px, py]) => ctx.lineTo(px, py));
+          ctx.stroke();
+          ctx.strokeStyle = `rgba(255, 255, 255, ${ltAlpha * 0.7})`;
+          ctx.lineWidth = 0.8;
+          ctx.shadowBlur = 8;
+          ctx.beginPath();
+          ctx.moveTo(ltPoints[0][0], ltPoints[0][1]);
+          ltPoints.forEach(([px, py]) => ctx.lineTo(px, py));
+          ctx.stroke();
+          ctx.restore();
+        }
+
+        // ── Sun ─────────────────────────────────────────────────────────────────
+        function drawSun(t) {
+          if (t > 0.38) return;
+          const a = 1 - t / 0.38;
+          const sx = W * 0.75, sy = H * 0.14, r = Math.min(W, H) * 0.075;
+          const g1 = ctx.createRadialGradient(sx, sy, 0, sx, sy, r * 4.5);
+          g1.addColorStop(0,    `rgba(255,230,100,${a * 0.5})`);
+          g1.addColorStop(0.35, `rgba(255,200,60,${a * 0.28})`);
+          g1.addColorStop(1,    'rgba(255,150,0,0)');
+          ctx.fillStyle = g1; ctx.beginPath(); ctx.arc(sx, sy, r * 4.5, 0, Math.PI * 2); ctx.fill();
+          const g2 = ctx.createRadialGradient(sx, sy, 0, sx, sy, r);
+          g2.addColorStop(0,   `rgba(255,252,210,${a})`);
+          g2.addColorStop(0.5, `rgba(255,220,80,${a})`);
+          g2.addColorStop(1,   `rgba(255,160,0,${a * 0.7})`);
+          ctx.fillStyle = g2; ctx.beginPath(); ctx.arc(sx, sy, r, 0, Math.PI * 2); ctx.fill();
+        }
+
+        // ── Weather UI updates ───────────────────────────────────────────────────
+        const WEATHER_LABELS = [
+          [0,    'CLEAR'],
+          [0.12, 'FEW CLOUDS'],
+          [0.32, 'OVERCAST'],
+          [0.52, 'RAIN'],
+          [0.72, 'HEAVY RAIN'],
+          [0.88, 'THUNDERSTORM'],
+        ];
+        let lastLabel = '';
+        function updateWeatherUI(t) {
+          let label = 'CLEAR';
+          for (const [thresh, lbl] of WEATHER_LABELS) { if (t >= thresh) label = lbl; }
+          if (label !== lastLabel) {
+            lastLabel = label;
+            const badge = document.getElementById('weather-badge');
+            if (badge) {
+              badge.textContent = label;
+              badge.classList.toggle('stormy', t > 0.65);
+            }
+          }
+          // Update slider track fill: teal (clear) → amber (cloudy/rain) → red (storm)
+          const sl = document.getElementById('aggressiveness-input');
+          if (sl) {
+            const pct  = ((Number(sl.value) - 1) / 4) * 100;
+            const fill = t < 0.38 ? '#00E5CC' : t < 0.68 ? '#FFB800' : '#FF5555';
+            sl.style.background = `linear-gradient(to right, ${fill} 0%, ${fill} ${pct}%, rgba(255,255,255,0.12) ${pct}%, rgba(255,255,255,0.12) 100%)`;
+          }
+        }
+
+        // ── Animation loop ───────────────────────────────────────────────────────
+        function animate() {
+          const t = getT();
+
+          // Sky gradient
+          const tc = colorAt(SKY_TOP, t), bc = colorAt(SKY_BOTTOM, t);
+          const grd = ctx.createLinearGradient(0, 0, 0, H);
+          grd.addColorStop(0, `rgb(${tc})`);
+          grd.addColorStop(1, `rgb(${bc})`);
+          ctx.fillStyle = grd;
+          ctx.fillRect(0, 0, W, H);
+
+          drawSun(t);
+
+          // Clouds: brightness lerps 248→68 (white to dark), coverage scales with t
+          const cbr  = lerp(248, 68, clamp(t * 1.5, 0, 1));
+          const cvis = clamp(t < 0.05 ? 0.15 : 0.15 + t * 1.5, 0.05, 1);
+          const windMult = 1 + t * 2;
+          for (const c of clouds) {
+            c.x -= c.speed * windMult;
+            if (c.x < -350) { Object.assign(c, makeCloud(false)); }
+            drawCloud(c.x, c.y, c.scale, cbr, c.alpha * cvis);
+          }
+
+          // Rain: fades in at t > 0.44
+          const rainVis = clamp((t - 0.44) / 0.28, 0, 1);
+          if (rainVis > 0) {
+            const windX = -1.8 * rainVis;
+            for (const d of drops) {
+              d.x += windX;
+              d.y += d.speed * (0.5 + t * 1.2);
+              if (d.y > H + 20 || d.x < -10) { d.x = Math.random() * W; d.y = -15; }
+              ctx.strokeStyle = `rgba(174, 214, 241, ${d.alpha * rainVis})`;
+              ctx.lineWidth = 1;
+              ctx.beginPath();
+              ctx.moveTo(d.x, d.y);
+              ctx.lineTo(d.x + windX * (d.len / d.speed), d.y + d.len);
+              ctx.stroke();
+            }
+          }
+
+          // Lightning: fires at t > 0.76, frequency doubles toward t=1
+          if (t > 0.76) {
+            ltTimer--;
+            if (ltTimer <= 0) {
+              const freq = lerp(550, 70, clamp((t - 0.76) / 0.24, 0, 1));
+              ltTimer = Math.floor(freq + Math.random() * freq);
+              newLightning();
+            }
+            drawLightningBolt();
+            ltAlpha = Math.max(0, ltAlpha - 0.055);
+          } else {
+            ltAlpha = 0;
+          }
+
+          updateWeatherUI(t);
+          requestAnimationFrame(animate);
+        }
+        animate();
+      })();
+      // ── End Weather Animation ────────────────────────────────────────────────
+
+            const airports = [
+        // North America — United States (West)
+        { code: "LAX", city: "Los Angeles", airport: "Los Angeles International", country: "USA", tz: "America/Los_Angeles" },
+        { code: "SFO", city: "San Francisco", airport: "San Francisco International", country: "USA", tz: "America/Los_Angeles" },
+        { code: "SJC", city: "San Jose", airport: "Norman Y. Mineta San Jose International", country: "USA", tz: "America/Los_Angeles" },
+        { code: "OAK", city: "Oakland", airport: "Oakland International", country: "USA", tz: "America/Los_Angeles" },
+        { code: "SEA", city: "Seattle", airport: "Seattle-Tacoma International", country: "USA", tz: "America/Los_Angeles" },
+        { code: "PDX", city: "Portland", airport: "Portland International", country: "USA", tz: "America/Los_Angeles" },
+        { code: "LAS", city: "Las Vegas", airport: "Harry Reid International", country: "USA", tz: "America/Los_Angeles" },
+        { code: "SMF", city: "Sacramento", airport: "Sacramento International", country: "USA", tz: "America/Los_Angeles" },
+        { code: "SAN", city: "San Diego", airport: "San Diego International", country: "USA", tz: "America/Los_Angeles" },
+        { code: "PHX", city: "Phoenix", airport: "Phoenix Sky Harbor International", country: "USA", tz: "America/Phoenix" },
+        { code: "TUS", city: "Tucson", airport: "Tucson International", country: "USA", tz: "America/Phoenix" },
+        // North America — United States (Mountain)
+        { code: "DEN", city: "Denver", airport: "Denver International", country: "USA", tz: "America/Denver" },
+        { code: "SLC", city: "Salt Lake City", airport: "Salt Lake City International", country: "USA", tz: "America/Denver" },
+        { code: "ABQ", city: "Albuquerque", airport: "Albuquerque International Sunport", country: "USA", tz: "America/Denver" },
+        { code: "BOI", city: "Boise", airport: "Boise Airport", country: "USA", tz: "America/Boise" },
+        // North America — United States (Central)
+        { code: "DFW", city: "Dallas", airport: "Dallas/Fort Worth International", country: "USA", tz: "America/Chicago" },
+        { code: "DAL", city: "Dallas", airport: "Love Field", country: "USA", tz: "America/Chicago" },
+        { code: "IAH", city: "Houston", airport: "George Bush Intercontinental", country: "USA", tz: "America/Chicago" },
+        { code: "HOU", city: "Houston", airport: "William P. Hobby", country: "USA", tz: "America/Chicago" },
+        { code: "SAT", city: "San Antonio", airport: "San Antonio International", country: "USA", tz: "America/Chicago" },
+        { code: "AUS", city: "Austin", airport: "Austin-Bergstrom International", country: "USA", tz: "America/Chicago" },
+        { code: "MSP", city: "Minneapolis", airport: "Minneapolis-Saint Paul International", country: "USA", tz: "America/Chicago" },
+        { code: "ORD", city: "Chicago", airport: "O'Hare International", country: "USA", tz: "America/Chicago" },
+        { code: "MDW", city: "Chicago", airport: "Midway International", country: "USA", tz: "America/Chicago" },
+        { code: "STL", city: "St. Louis", airport: "St. Louis Lambert International", country: "USA", tz: "America/Chicago" },
+        { code: "MSY", city: "New Orleans", airport: "Louis Armstrong New Orleans International", country: "USA", tz: "America/Chicago" },
+        { code: "MEM", city: "Memphis", airport: "Memphis International", country: "USA", tz: "America/Chicago" },
+        { code: "BNA", city: "Nashville", airport: "Nashville International", country: "USA", tz: "America/Chicago" },
+        { code: "OMA", city: "Omaha", airport: "Eppley Airfield", country: "USA", tz: "America/Chicago" },
+        { code: "MCI", city: "Kansas City", airport: "Kansas City International", country: "USA", tz: "America/Chicago" },
+        { code: "MKE", city: "Milwaukee", airport: "General Mitchell International", country: "USA", tz: "America/Chicago" },
+        { code: "OKC", city: "Oklahoma City", airport: "Will Rogers World Airport", country: "USA", tz: "America/Chicago" },
+        { code: "TUL", city: "Tulsa", airport: "Tulsa International", country: "USA", tz: "America/Chicago" },
+        // North America — United States (Eastern)
+        { code: "ATL", city: "Atlanta", airport: "Hartsfield-Jackson Atlanta International", country: "USA", tz: "America/New_York" },
+        { code: "CLT", city: "Charlotte", airport: "Charlotte Douglas International", country: "USA", tz: "America/New_York" },
+        { code: "MCO", city: "Orlando", airport: "Orlando International", country: "USA", tz: "America/New_York" },
+        { code: "MIA", city: "Miami", airport: "Miami International", country: "USA", tz: "America/New_York" },
+        { code: "TPA", city: "Tampa", airport: "Tampa International", country: "USA", tz: "America/New_York" },
+        { code: "FLL", city: "Fort Lauderdale", airport: "Fort Lauderdale-Hollywood International", country: "USA", tz: "America/New_York" },
+        { code: "JAX", city: "Jacksonville", airport: "Jacksonville International", country: "USA", tz: "America/New_York" },
+        { code: "RDU", city: "Raleigh-Durham", airport: "Raleigh-Durham International", country: "USA", tz: "America/New_York" },
+        { code: "JFK", city: "New York", airport: "John F. Kennedy International", country: "USA", tz: "America/New_York" },
+        { code: "LGA", city: "New York", airport: "LaGuardia", country: "USA", tz: "America/New_York" },
+        { code: "EWR", city: "Newark", airport: "Newark Liberty International", country: "USA", tz: "America/New_York" },
+        { code: "PHL", city: "Philadelphia", airport: "Philadelphia International", country: "USA", tz: "America/New_York" },
+        { code: "BWI", city: "Baltimore", airport: "Baltimore/Washington International", country: "USA", tz: "America/New_York" },
+        { code: "DCA", city: "Washington D.C.", airport: "Ronald Reagan Washington National", country: "USA", tz: "America/New_York" },
+        { code: "IAD", city: "Washington D.C.", airport: "Dulles International", country: "USA", tz: "America/New_York" },
+        { code: "BOS", city: "Boston", airport: "Logan International", country: "USA", tz: "America/New_York" },
+        { code: "DTW", city: "Detroit", airport: "Detroit Metropolitan Wayne County", country: "USA", tz: "America/Detroit" },
+        { code: "CLE", city: "Cleveland", airport: "Cleveland Hopkins International", country: "USA", tz: "America/New_York" },
+        { code: "PIT", city: "Pittsburgh", airport: "Pittsburgh International", country: "USA", tz: "America/New_York" },
+        { code: "CMH", city: "Columbus", airport: "John Glenn Columbus International", country: "USA", tz: "America/New_York" },
+        { code: "IND", city: "Indianapolis", airport: "Indianapolis International", country: "USA", tz: "America/Indiana/Indianapolis" },
+        { code: "CVG", city: "Cincinnati", airport: "Cincinnati/Northern Kentucky International", country: "USA", tz: "America/New_York" },
+        { code: "BUF", city: "Buffalo", airport: "Buffalo Niagara International", country: "USA", tz: "America/New_York" },
+        { code: "SYR", city: "Syracuse", airport: "Hancock International", country: "USA", tz: "America/New_York" },
+        { code: "BDL", city: "Hartford", airport: "Bradley International", country: "USA", tz: "America/New_York" },
+        { code: "PVD", city: "Providence", airport: "T.F. Green International", country: "USA", tz: "America/New_York" },
+        // North America — United States (Alaska & Hawaii)
+        { code: "ANC", city: "Anchorage", airport: "Ted Stevens Anchorage International", country: "USA", tz: "America/Anchorage" },
+        { code: "FAI", city: "Fairbanks", airport: "Fairbanks International", country: "USA", tz: "America/Anchorage" },
+        { code: "HNL", city: "Honolulu", airport: "Daniel K. Inouye International", country: "USA", tz: "Pacific/Honolulu" },
+        { code: "OGG", city: "Maui", airport: "Kahului Airport", country: "USA", tz: "Pacific/Honolulu" },
+        // Canada
+        { code: "YYZ", city: "Toronto", airport: "Pearson International", country: "Canada", tz: "America/Toronto" },
+        { code: "YUL", city: "Montreal", airport: "Montreal Trudeau International", country: "Canada", tz: "America/Toronto" },
+        { code: "YOW", city: "Ottawa", airport: "Ottawa Macdonald-Cartier International", country: "Canada", tz: "America/Toronto" },
+        { code: "YHZ", city: "Halifax", airport: "Halifax Stanfield International", country: "Canada", tz: "America/Halifax" },
+        { code: "YQB", city: "Quebec City", airport: "Jean Lesage International", country: "Canada", tz: "America/Toronto" },
+        { code: "YWG", city: "Winnipeg", airport: "James Armstrong Richardson International", country: "Canada", tz: "America/Winnipeg" },
+        { code: "YYC", city: "Calgary", airport: "Calgary International", country: "Canada", tz: "America/Edmonton" },
+        { code: "YEG", city: "Edmonton", airport: "Edmonton International", country: "Canada", tz: "America/Edmonton" },
+        { code: "YVR", city: "Vancouver", airport: "Vancouver International", country: "Canada", tz: "America/Vancouver" },
+        { code: "YYJ", city: "Victoria", airport: "Victoria International", country: "Canada", tz: "America/Vancouver" },
+        // Mexico
+        { code: "MEX", city: "Mexico City", airport: "Benito Juarez International", country: "Mexico", tz: "America/Mexico_City" },
+        { code: "CUN", city: "Cancun", airport: "Cancun International", country: "Mexico", tz: "America/Cancun" },
+        { code: "GDL", city: "Guadalajara", airport: "Miguel Hidalgo y Costilla International", country: "Mexico", tz: "America/Mexico_City" },
+        { code: "MTY", city: "Monterrey", airport: "Monterrey International", country: "Mexico", tz: "America/Monterrey" },
+        { code: "PVR", city: "Puerto Vallarta", airport: "Gustavo Diaz Ordaz International", country: "Mexico", tz: "America/Mexico_City" },
+        { code: "SJD", city: "Los Cabos", airport: "Los Cabos International", country: "Mexico", tz: "America/Mazatlan" },
+        { code: "TIJ", city: "Tijuana", airport: "General Abelardo L. Rodriguez International", country: "Mexico", tz: "America/Tijuana" },
+        { code: "MID", city: "Merida", airport: "Manuel Crescencio Rejon International", country: "Mexico", tz: "America/Merida" },
+        // Central America & Caribbean
+        { code: "SJO", city: "San Jose", airport: "Juan Santamaria International", country: "Costa Rica", tz: "America/Costa_Rica" },
+        { code: "GUA", city: "Guatemala City", airport: "La Aurora International", country: "Guatemala", tz: "America/Guatemala" },
+        { code: "SAL", city: "San Salvador", airport: "Monsenor Romero International", country: "El Salvador", tz: "America/El_Salvador" },
+        { code: "MGA", city: "Managua", airport: "Augusto C. Sandino International", country: "Nicaragua", tz: "America/Managua" },
+        { code: "PTY", city: "Panama City", airport: "Tocumen International", country: "Panama", tz: "America/Panama" },
+        { code: "SDQ", city: "Santo Domingo", airport: "Las Americas International", country: "Dominican Republic", tz: "America/Santo_Domingo" },
+        { code: "SJU", city: "San Juan", airport: "Luis Munoz Marin International", country: "Puerto Rico", tz: "America/Puerto_Rico" },
+        { code: "NAS", city: "Nassau", airport: "Lynden Pindling International", country: "Bahamas", tz: "America/Nassau" },
+        { code: "MBJ", city: "Montego Bay", airport: "Sangster International", country: "Jamaica", tz: "America/Jamaica" },
+        { code: "KIN", city: "Kingston", airport: "Norman Manley International", country: "Jamaica", tz: "America/Jamaica" },
+        { code: "BGI", city: "Bridgetown", airport: "Grantley Adams International", country: "Barbados", tz: "America/Barbados" },
+        { code: "POS", city: "Port of Spain", airport: "Piarco International", country: "Trinidad and Tobago", tz: "America/Port_of_Spain" },
+        // South America
+        { code: "GRU", city: "Sao Paulo", airport: "Guarulhos International", country: "Brazil", tz: "America/Sao_Paulo" },
+        { code: "CGH", city: "Sao Paulo", airport: "Congonhas Airport", country: "Brazil", tz: "America/Sao_Paulo" },
+        { code: "GIG", city: "Rio de Janeiro", airport: "Galeao International", country: "Brazil", tz: "America/Sao_Paulo" },
+        { code: "BSB", city: "Brasilia", airport: "Presidente Juscelino Kubitschek International", country: "Brazil", tz: "America/Sao_Paulo" },
+        { code: "SSA", city: "Salvador", airport: "Luis Eduardo Magalhaes International", country: "Brazil", tz: "America/Bahia" },
+        { code: "FOR", city: "Fortaleza", airport: "Pinto Martins International", country: "Brazil", tz: "America/Fortaleza" },
+        { code: "REC", city: "Recife", airport: "Guararapes International", country: "Brazil", tz: "America/Recife" },
+        { code: "POA", city: "Porto Alegre", airport: "Salgado Filho International", country: "Brazil", tz: "America/Sao_Paulo" },
+        { code: "MAO", city: "Manaus", airport: "Eduardo Gomes International", country: "Brazil", tz: "America/Manaus" },
+        { code: "EZE", city: "Buenos Aires", airport: "Ministro Pistarini International", country: "Argentina", tz: "America/Argentina/Buenos_Aires" },
+        { code: "AEP", city: "Buenos Aires", airport: "Jorge Newbery Airfield", country: "Argentina", tz: "America/Argentina/Buenos_Aires" },
+        { code: "COR", city: "Cordoba", airport: "Taravella International", country: "Argentina", tz: "America/Argentina/Cordoba" },
+        { code: "SCL", city: "Santiago", airport: "Arturo Merino Benitez International", country: "Chile", tz: "America/Santiago" },
+        { code: "LIM", city: "Lima", airport: "Jorge Chavez International", country: "Peru", tz: "America/Lima" },
+        { code: "BOG", city: "Bogota", airport: "El Dorado International", country: "Colombia", tz: "America/Bogota" },
+        { code: "MDE", city: "Medellin", airport: "Jose Maria Cordova International", country: "Colombia", tz: "America/Bogota" },
+        { code: "CLO", city: "Cali", airport: "Alfonso Bonilla Aragon International", country: "Colombia", tz: "America/Bogota" },
+        { code: "UIO", city: "Quito", airport: "Mariscal Sucre International", country: "Ecuador", tz: "America/Guayaquil" },
+        { code: "GYE", city: "Guayaquil", airport: "Jose Joaquin de Olmedo International", country: "Ecuador", tz: "America/Guayaquil" },
+        { code: "CCS", city: "Caracas", airport: "Simon Bolivar International", country: "Venezuela", tz: "America/Caracas" },
+        { code: "MVD", city: "Montevideo", airport: "Carrasco International", country: "Uruguay", tz: "America/Montevideo" },
+        { code: "ASU", city: "Asuncion", airport: "Silvio Pettirossi International", country: "Paraguay", tz: "America/Asuncion" },
+        { code: "LPB", city: "La Paz", airport: "El Alto International", country: "Bolivia", tz: "America/La_Paz" },
+        { code: "VVI", city: "Santa Cruz", airport: "Viru Viru International", country: "Bolivia", tz: "America/La_Paz" },
+        // Europe — UK & Ireland
+        { code: "LHR", city: "London", airport: "Heathrow", country: "United Kingdom", tz: "Europe/London" },
+        { code: "LGW", city: "London", airport: "Gatwick", country: "United Kingdom", tz: "Europe/London" },
+        { code: "STN", city: "London", airport: "Stansted", country: "United Kingdom", tz: "Europe/London" },
+        { code: "LTN", city: "London", airport: "Luton", country: "United Kingdom", tz: "Europe/London" },
+        { code: "MAN", city: "Manchester", airport: "Manchester Airport", country: "United Kingdom", tz: "Europe/London" },
+        { code: "BHX", city: "Birmingham", airport: "Birmingham Airport", country: "United Kingdom", tz: "Europe/London" },
+        { code: "EDI", city: "Edinburgh", airport: "Edinburgh Airport", country: "United Kingdom", tz: "Europe/London" },
+        { code: "GLA", city: "Glasgow", airport: "Glasgow Airport", country: "United Kingdom", tz: "Europe/London" },
+        { code: "BRS", city: "Bristol", airport: "Bristol Airport", country: "United Kingdom", tz: "Europe/London" },
+        { code: "NCL", city: "Newcastle", airport: "Newcastle International", country: "United Kingdom", tz: "Europe/London" },
+        { code: "DUB", city: "Dublin", airport: "Dublin Airport", country: "Ireland", tz: "Europe/Dublin" },
+        { code: "SNN", city: "Shannon", airport: "Shannon Airport", country: "Ireland", tz: "Europe/Dublin" },
+        // Europe — France & Benelux
+        { code: "CDG", city: "Paris", airport: "Charles de Gaulle", country: "France", tz: "Europe/Paris" },
+        { code: "ORY", city: "Paris", airport: "Orly", country: "France", tz: "Europe/Paris" },
+        { code: "NCE", city: "Nice", airport: "Nice Cote d'Azur International", country: "France", tz: "Europe/Paris" },
+        { code: "LYS", city: "Lyon", airport: "Lyon-Saint Exupery", country: "France", tz: "Europe/Paris" },
+        { code: "MRS", city: "Marseille", airport: "Marseille Provence", country: "France", tz: "Europe/Paris" },
+        { code: "BOD", city: "Bordeaux", airport: "Bordeaux-Merignac", country: "France", tz: "Europe/Paris" },
+        { code: "TLS", city: "Toulouse", airport: "Toulouse-Blagnac", country: "France", tz: "Europe/Paris" },
+        { code: "AMS", city: "Amsterdam", airport: "Schiphol", country: "Netherlands", tz: "Europe/Amsterdam" },
+        { code: "BRU", city: "Brussels", airport: "Brussels Airport", country: "Belgium", tz: "Europe/Brussels" },
+        { code: "LUX", city: "Luxembourg", airport: "Luxembourg Airport", country: "Luxembourg", tz: "Europe/Luxembourg" },
+        // Europe — Switzerland & Germany & Austria
+        { code: "ZRH", city: "Zurich", airport: "Zurich Airport", country: "Switzerland", tz: "Europe/Zurich" },
+        { code: "GVA", city: "Geneva", airport: "Geneva Airport", country: "Switzerland", tz: "Europe/Zurich" },
+        { code: "FRA", city: "Frankfurt", airport: "Frankfurt Main", country: "Germany", tz: "Europe/Berlin" },
+        { code: "MUC", city: "Munich", airport: "Munich Airport", country: "Germany", tz: "Europe/Berlin" },
+        { code: "BER", city: "Berlin", airport: "Berlin Brandenburg", country: "Germany", tz: "Europe/Berlin" },
+        { code: "HAM", city: "Hamburg", airport: "Hamburg Airport", country: "Germany", tz: "Europe/Berlin" },
+        { code: "DUS", city: "Dusseldorf", airport: "Dusseldorf Airport", country: "Germany", tz: "Europe/Berlin" },
+        { code: "STR", city: "Stuttgart", airport: "Stuttgart Airport", country: "Germany", tz: "Europe/Berlin" },
+        { code: "CGN", city: "Cologne", airport: "Cologne Bonn Airport", country: "Germany", tz: "Europe/Berlin" },
+        { code: "NUE", city: "Nuremberg", airport: "Nuremberg Airport", country: "Germany", tz: "Europe/Berlin" },
+        { code: "VIE", city: "Vienna", airport: "Vienna International", country: "Austria", tz: "Europe/Vienna" },
+        { code: "SZG", city: "Salzburg", airport: "Salzburg Airport", country: "Austria", tz: "Europe/Vienna" },
+        // Europe — Spain & Portugal
+        { code: "MAD", city: "Madrid", airport: "Adolfo Suarez Madrid-Barajas", country: "Spain", tz: "Europe/Madrid" },
+        { code: "BCN", city: "Barcelona", airport: "Josep Tarradellas Barcelona-El Prat", country: "Spain", tz: "Europe/Madrid" },
+        { code: "AGP", city: "Malaga", airport: "Costa del Sol Airport", country: "Spain", tz: "Europe/Madrid" },
+        { code: "PMI", city: "Palma de Mallorca", airport: "Palma de Mallorca Airport", country: "Spain", tz: "Europe/Madrid" },
+        { code: "SVQ", city: "Seville", airport: "Seville Airport", country: "Spain", tz: "Europe/Madrid" },
+        { code: "VLC", city: "Valencia", airport: "Valencia Airport", country: "Spain", tz: "Europe/Madrid" },
+        { code: "LIS", city: "Lisbon", airport: "Humberto Delgado Airport", country: "Portugal", tz: "Europe/Lisbon" },
+        { code: "OPO", city: "Porto", airport: "Francisco Sa Carneiro Airport", country: "Portugal", tz: "Europe/Lisbon" },
+        { code: "FAO", city: "Faro", airport: "Faro Airport", country: "Portugal", tz: "Europe/Lisbon" },
+        { code: "FNC", city: "Funchal", airport: "Madeira Airport", country: "Portugal", tz: "Atlantic/Madeira" },
+        // Europe — Italy
+        { code: "FCO", city: "Rome", airport: "Leonardo da Vinci International (Fiumicino)", country: "Italy", tz: "Europe/Rome" },
+        { code: "MXP", city: "Milan", airport: "Malpensa International", country: "Italy", tz: "Europe/Rome" },
+        { code: "LIN", city: "Milan", airport: "Linate Airport", country: "Italy", tz: "Europe/Rome" },
+        { code: "VCE", city: "Venice", airport: "Marco Polo International", country: "Italy", tz: "Europe/Rome" },
+        { code: "FLR", city: "Florence", airport: "Amerigo Vespucci Airport", country: "Italy", tz: "Europe/Rome" },
+        { code: "NAP", city: "Naples", airport: "Naples International", country: "Italy", tz: "Europe/Rome" },
+        { code: "PMO", city: "Palermo", airport: "Falcone-Borsellino Airport", country: "Italy", tz: "Europe/Rome" },
+        { code: "CTA", city: "Catania", airport: "Catania-Fontanarossa Airport", country: "Italy", tz: "Europe/Rome" },
+        // Europe — Scandinavia & Iceland
+        { code: "CPH", city: "Copenhagen", airport: "Copenhagen Airport", country: "Denmark", tz: "Europe/Copenhagen" },
+        { code: "ARN", city: "Stockholm", airport: "Stockholm Arlanda", country: "Sweden", tz: "Europe/Stockholm" },
+        { code: "GOT", city: "Gothenburg", airport: "Goteborg Landvetter", country: "Sweden", tz: "Europe/Stockholm" },
+        { code: "HEL", city: "Helsinki", airport: "Helsinki-Vantaa", country: "Finland", tz: "Europe/Helsinki" },
+        { code: "OSL", city: "Oslo", airport: "Oslo Gardermoen", country: "Norway", tz: "Europe/Oslo" },
+        { code: "BGO", city: "Bergen", airport: "Bergen Airport", country: "Norway", tz: "Europe/Oslo" },
+        { code: "KEF", city: "Reykjavik", airport: "Keflavik International", country: "Iceland", tz: "Atlantic/Reykjavik" },
+        // Europe — Eastern & Balkans
+        { code: "PRG", city: "Prague", airport: "Vaclav Havel Airport Prague", country: "Czech Republic", tz: "Europe/Prague" },
+        { code: "WAW", city: "Warsaw", airport: "Warsaw Chopin Airport", country: "Poland", tz: "Europe/Warsaw" },
+        { code: "KRK", city: "Krakow", airport: "John Paul II International", country: "Poland", tz: "Europe/Warsaw" },
+        { code: "BUD", city: "Budapest", airport: "Budapest Ferenc Liszt International", country: "Hungary", tz: "Europe/Budapest" },
+        { code: "BTS", city: "Bratislava", airport: "Milan Rastislav Stefanik Airport", country: "Slovakia", tz: "Europe/Bratislava" },
+        { code: "OTP", city: "Bucharest", airport: "Henri Coanda International", country: "Romania", tz: "Europe/Bucharest" },
+        { code: "SOF", city: "Sofia", airport: "Sofia Airport", country: "Bulgaria", tz: "Europe/Sofia" },
+        { code: "ATH", city: "Athens", airport: "Athens International (Eleftherios Venizelos)", country: "Greece", tz: "Europe/Athens" },
+        { code: "SKG", city: "Thessaloniki", airport: "Thessaloniki International (Makedonia)", country: "Greece", tz: "Europe/Athens" },
+        { code: "HER", city: "Heraklion", airport: "Heraklion International", country: "Greece", tz: "Europe/Athens" },
+        { code: "ZAG", city: "Zagreb", airport: "Zagreb Airport", country: "Croatia", tz: "Europe/Zagreb" },
+        { code: "SPU", city: "Split", airport: "Split Airport", country: "Croatia", tz: "Europe/Zagreb" },
+        { code: "DBV", city: "Dubrovnik", airport: "Dubrovnik Airport", country: "Croatia", tz: "Europe/Zagreb" },
+        { code: "LJU", city: "Ljubljana", airport: "Ljubljana Joze Pucnik Airport", country: "Slovenia", tz: "Europe/Ljubljana" },
+        { code: "BEG", city: "Belgrade", airport: "Belgrade Nikola Tesla Airport", country: "Serbia", tz: "Europe/Belgrade" },
+        { code: "SKP", city: "Skopje", airport: "Skopje Alexander the Great Airport", country: "North Macedonia", tz: "Europe/Skopje" },
+        { code: "TIA", city: "Tirana", airport: "Tirana International Nene Tereza", country: "Albania", tz: "Europe/Tirane" },
+        { code: "SJJ", city: "Sarajevo", airport: "Sarajevo International", country: "Bosnia and Herzegovina", tz: "Europe/Sarajevo" },
+        { code: "RIX", city: "Riga", airport: "Riga International", country: "Latvia", tz: "Europe/Riga" },
+        { code: "TLL", city: "Tallinn", airport: "Lennart Meri Tallinn Airport", country: "Estonia", tz: "Europe/Tallinn" },
+        { code: "VNO", city: "Vilnius", airport: "Vilnius Airport", country: "Lithuania", tz: "Europe/Vilnius" },
+        { code: "KBP", city: "Kyiv", airport: "Boryspil International", country: "Ukraine", tz: "Europe/Kyiv" },
+        { code: "SVO", city: "Moscow", airport: "Sheremetyevo International", country: "Russia", tz: "Europe/Moscow" },
+        { code: "DME", city: "Moscow", airport: "Domodedovo International", country: "Russia", tz: "Europe/Moscow" },
+        { code: "LED", city: "St. Petersburg", airport: "Pulkovo International", country: "Russia", tz: "Europe/Moscow" },
+        // Turkey
+        { code: "IST", city: "Istanbul", airport: "Istanbul Airport", country: "Turkey", tz: "Europe/Istanbul" },
+        { code: "SAW", city: "Istanbul", airport: "Istanbul Sabiha Gokcen", country: "Turkey", tz: "Europe/Istanbul" },
+        { code: "ADB", city: "Izmir", airport: "Adnan Menderes Airport", country: "Turkey", tz: "Europe/Istanbul" },
+        { code: "AYT", city: "Antalya", airport: "Antalya Airport", country: "Turkey", tz: "Europe/Istanbul" },
+        { code: "ESB", city: "Ankara", airport: "Esenboga International", country: "Turkey", tz: "Europe/Istanbul" },
+        // Middle East
+        { code: "DXB", city: "Dubai", airport: "Dubai International", country: "UAE", tz: "Asia/Dubai" },
+        { code: "AUH", city: "Abu Dhabi", airport: "Abu Dhabi International", country: "UAE", tz: "Asia/Dubai" },
+        { code: "SHJ", city: "Sharjah", airport: "Sharjah International", country: "UAE", tz: "Asia/Dubai" },
+        { code: "DOH", city: "Doha", airport: "Hamad International", country: "Qatar", tz: "Asia/Qatar" },
+        { code: "BAH", city: "Manama", airport: "Bahrain International", country: "Bahrain", tz: "Asia/Bahrain" },
+        { code: "KWI", city: "Kuwait City", airport: "Kuwait International", country: "Kuwait", tz: "Asia/Kuwait" },
+        { code: "RUH", city: "Riyadh", airport: "King Khalid International", country: "Saudi Arabia", tz: "Asia/Riyadh" },
+        { code: "JED", city: "Jeddah", airport: "King Abdulaziz International", country: "Saudi Arabia", tz: "Asia/Riyadh" },
+        { code: "DMM", city: "Dammam", airport: "King Fahd International", country: "Saudi Arabia", tz: "Asia/Riyadh" },
+        { code: "MCT", city: "Muscat", airport: "Muscat International", country: "Oman", tz: "Asia/Muscat" },
+        { code: "AMM", city: "Amman", airport: "Queen Alia International", country: "Jordan", tz: "Asia/Amman" },
+        { code: "BEY", city: "Beirut", airport: "Rafic Hariri International", country: "Lebanon", tz: "Asia/Beirut" },
+        { code: "TLV", city: "Tel Aviv", airport: "Ben Gurion International", country: "Israel", tz: "Asia/Jerusalem" },
+        { code: "BGW", city: "Baghdad", airport: "Baghdad International", country: "Iraq", tz: "Asia/Baghdad" },
+        { code: "IKA", city: "Tehran", airport: "Imam Khomeini International", country: "Iran", tz: "Asia/Tehran" },
+        // Africa — North
+        { code: "CAI", city: "Cairo", airport: "Cairo International", country: "Egypt", tz: "Africa/Cairo" },
+        { code: "HRG", city: "Hurghada", airport: "Hurghada International", country: "Egypt", tz: "Africa/Cairo" },
+        { code: "SSH", city: "Sharm el-Sheikh", airport: "Sharm el-Sheikh International", country: "Egypt", tz: "Africa/Cairo" },
+        { code: "CMN", city: "Casablanca", airport: "Mohammed V International", country: "Morocco", tz: "Africa/Casablanca" },
+        { code: "RAK", city: "Marrakech", airport: "Marrakech Menara Airport", country: "Morocco", tz: "Africa/Casablanca" },
+        { code: "TUN", city: "Tunis", airport: "Tunis-Carthage International", country: "Tunisia", tz: "Africa/Tunis" },
+        { code: "ALG", city: "Algiers", airport: "Houari Boumediene Airport", country: "Algeria", tz: "Africa/Algiers" },
+        // Africa — East
+        { code: "ADD", city: "Addis Ababa", airport: "Bole International", country: "Ethiopia", tz: "Africa/Addis_Ababa" },
+        { code: "NBO", city: "Nairobi", airport: "Jomo Kenyatta International", country: "Kenya", tz: "Africa/Nairobi" },
+        { code: "MBA", city: "Mombasa", airport: "Moi International", country: "Kenya", tz: "Africa/Nairobi" },
+        { code: "EBB", city: "Entebbe", airport: "Entebbe International", country: "Uganda", tz: "Africa/Kampala" },
+        { code: "KGL", city: "Kigali", airport: "Kigali International", country: "Rwanda", tz: "Africa/Kigali" },
+        { code: "DAR", city: "Dar es Salaam", airport: "Julius Nyerere International", country: "Tanzania", tz: "Africa/Dar_es_Salaam" },
+        { code: "ZNZ", city: "Zanzibar", airport: "Abeid Amani Karume International", country: "Tanzania", tz: "Africa/Dar_es_Salaam" },
+        // Africa — West & Central
+        { code: "LOS", city: "Lagos", airport: "Murtala Muhammed International", country: "Nigeria", tz: "Africa/Lagos" },
+        { code: "ABV", city: "Abuja", airport: "Nnamdi Azikiwe International", country: "Nigeria", tz: "Africa/Lagos" },
+        { code: "ACC", city: "Accra", airport: "Kotoka International", country: "Ghana", tz: "Africa/Accra" },
+        { code: "ABJ", city: "Abidjan", airport: "Felix-Houphouet-Boigny International", country: "Ivory Coast", tz: "Africa/Abidjan" },
+        { code: "DKR", city: "Dakar", airport: "Blaise Diagne International", country: "Senegal", tz: "Africa/Dakar" },
+        // Africa — South
+        { code: "JNB", city: "Johannesburg", airport: "O.R. Tambo International", country: "South Africa", tz: "Africa/Johannesburg" },
+        { code: "CPT", city: "Cape Town", airport: "Cape Town International", country: "South Africa", tz: "Africa/Johannesburg" },
+        { code: "DUR", city: "Durban", airport: "King Shaka International", country: "South Africa", tz: "Africa/Johannesburg" },
+        { code: "HRE", city: "Harare", airport: "Robert Gabriel Mugabe International", country: "Zimbabwe", tz: "Africa/Harare" },
+        { code: "LUN", city: "Lusaka", airport: "Kenneth Kaunda International", country: "Zambia", tz: "Africa/Lusaka" },
+        { code: "WDH", city: "Windhoek", airport: "Hosea Kutako International", country: "Namibia", tz: "Africa/Windhoek" },
+        { code: "MPM", city: "Maputo", airport: "Maputo International", country: "Mozambique", tz: "Africa/Maputo" },
+        // Africa — Indian Ocean
+        { code: "TNR", city: "Antananarivo", airport: "Ivato International", country: "Madagascar", tz: "Indian/Antananarivo" },
+        { code: "MRU", city: "Mauritius", airport: "Sir Seewoosagur Ramgoolam International", country: "Mauritius", tz: "Indian/Mauritius" },
+        { code: "RUN", city: "Reunion", airport: "Roland Garros Airport", country: "Reunion", tz: "Indian/Reunion" },
+        // South Asia
+        { code: "DEL", city: "Delhi", airport: "Indira Gandhi International", country: "India", tz: "Asia/Kolkata" },
+        { code: "BOM", city: "Mumbai", airport: "Chhatrapati Shivaji Maharaj International", country: "India", tz: "Asia/Kolkata" },
+        { code: "MAA", city: "Chennai", airport: "Chennai International", country: "India", tz: "Asia/Kolkata" },
+        { code: "BLR", city: "Bengaluru", airport: "Kempegowda International", country: "India", tz: "Asia/Kolkata" },
+        { code: "HYD", city: "Hyderabad", airport: "Rajiv Gandhi International", country: "India", tz: "Asia/Kolkata" },
+        { code: "CCU", city: "Kolkata", airport: "Netaji Subhas Chandra Bose International", country: "India", tz: "Asia/Kolkata" },
+        { code: "COK", city: "Kochi", airport: "Cochin International", country: "India", tz: "Asia/Kolkata" },
+        { code: "AMD", city: "Ahmedabad", airport: "Sardar Vallabhbhai Patel International", country: "India", tz: "Asia/Kolkata" },
+        { code: "JAI", city: "Jaipur", airport: "Jaipur International", country: "India", tz: "Asia/Kolkata" },
+        { code: "GOI", city: "Goa", airport: "Dabolim Airport", country: "India", tz: "Asia/Kolkata" },
+        { code: "PNQ", city: "Pune", airport: "Pune Airport", country: "India", tz: "Asia/Kolkata" },
+        { code: "LKO", city: "Lucknow", airport: "Chaudhary Charan Singh International", country: "India", tz: "Asia/Kolkata" },
+        { code: "KHI", city: "Karachi", airport: "Jinnah International", country: "Pakistan", tz: "Asia/Karachi" },
+        { code: "LHE", city: "Lahore", airport: "Allama Iqbal International", country: "Pakistan", tz: "Asia/Karachi" },
+        { code: "ISB", city: "Islamabad", airport: "Islamabad International", country: "Pakistan", tz: "Asia/Karachi" },
+        { code: "CMB", city: "Colombo", airport: "Bandaranaike International", country: "Sri Lanka", tz: "Asia/Colombo" },
+        { code: "MLE", city: "Male", airport: "Velana International", country: "Maldives", tz: "Indian/Maldives" },
+        { code: "DAC", city: "Dhaka", airport: "Hazrat Shahjalal International", country: "Bangladesh", tz: "Asia/Dhaka" },
+        { code: "KTM", city: "Kathmandu", airport: "Tribhuvan International", country: "Nepal", tz: "Asia/Kathmandu" },
+        { code: "PBH", city: "Paro", airport: "Paro Airport", country: "Bhutan", tz: "Asia/Thimphu" },
+        // Southeast Asia
+        { code: "SIN", city: "Singapore", airport: "Changi Airport", country: "Singapore", tz: "Asia/Singapore" },
+        { code: "BKK", city: "Bangkok", airport: "Suvarnabhumi Airport", country: "Thailand", tz: "Asia/Bangkok" },
+        { code: "DMK", city: "Bangkok", airport: "Don Mueang International", country: "Thailand", tz: "Asia/Bangkok" },
+        { code: "HKT", city: "Phuket", airport: "Phuket International", country: "Thailand", tz: "Asia/Bangkok" },
+        { code: "CNX", city: "Chiang Mai", airport: "Chiang Mai International", country: "Thailand", tz: "Asia/Bangkok" },
+        { code: "KUL", city: "Kuala Lumpur", airport: "Kuala Lumpur International", country: "Malaysia", tz: "Asia/Kuala_Lumpur" },
+        { code: "PEN", city: "Penang", airport: "Penang International", country: "Malaysia", tz: "Asia/Kuala_Lumpur" },
+        { code: "BKI", city: "Kota Kinabalu", airport: "Kota Kinabalu International", country: "Malaysia", tz: "Asia/Kuching" },
+        { code: "CGK", city: "Jakarta", airport: "Soekarno-Hatta International", country: "Indonesia", tz: "Asia/Jakarta" },
+        { code: "SUB", city: "Surabaya", airport: "Juanda International", country: "Indonesia", tz: "Asia/Jakarta" },
+        { code: "DPS", city: "Bali", airport: "Ngurah Rai International", country: "Indonesia", tz: "Asia/Makassar" },
+        { code: "UPG", city: "Makassar", airport: "Sultan Hasanuddin International", country: "Indonesia", tz: "Asia/Makassar" },
+        { code: "MNL", city: "Manila", airport: "Ninoy Aquino International", country: "Philippines", tz: "Asia/Manila" },
+        { code: "CEB", city: "Cebu", airport: "Mactan-Cebu International", country: "Philippines", tz: "Asia/Manila" },
+        { code: "DVO", city: "Davao", airport: "Francisco Bangoy International", country: "Philippines", tz: "Asia/Manila" },
+        { code: "SGN", city: "Ho Chi Minh City", airport: "Tan Son Nhat International", country: "Vietnam", tz: "Asia/Ho_Chi_Minh" },
+        { code: "HAN", city: "Hanoi", airport: "Noi Bai International", country: "Vietnam", tz: "Asia/Ho_Chi_Minh" },
+        { code: "DAD", city: "Da Nang", airport: "Da Nang International", country: "Vietnam", tz: "Asia/Ho_Chi_Minh" },
+        { code: "RGN", city: "Yangon", airport: "Yangon International", country: "Myanmar", tz: "Asia/Yangon" },
+        { code: "VTE", city: "Vientiane", airport: "Wattay International", country: "Laos", tz: "Asia/Vientiane" },
+        { code: "PNH", city: "Phnom Penh", airport: "Phnom Penh International", country: "Cambodia", tz: "Asia/Phnom_Penh" },
+        { code: "REP", city: "Siem Reap", airport: "Siem Reap-Angkor International", country: "Cambodia", tz: "Asia/Phnom_Penh" },
+        { code: "BWN", city: "Bandar Seri Begawan", airport: "Brunei International", country: "Brunei", tz: "Asia/Brunei" },
+        // East Asia — Japan
+        { code: "HND", city: "Tokyo", airport: "Haneda Airport", country: "Japan", tz: "Asia/Tokyo" },
+        { code: "NRT", city: "Tokyo", airport: "Narita International", country: "Japan", tz: "Asia/Tokyo" },
+        { code: "KIX", city: "Osaka", airport: "Kansai International", country: "Japan", tz: "Asia/Tokyo" },
+        { code: "ITM", city: "Osaka", airport: "Osaka Itami Airport", country: "Japan", tz: "Asia/Tokyo" },
+        { code: "NGO", city: "Nagoya", airport: "Chubu Centrair International", country: "Japan", tz: "Asia/Tokyo" },
+        { code: "CTS", city: "Sapporo", airport: "New Chitose Airport", country: "Japan", tz: "Asia/Tokyo" },
+        { code: "OKA", city: "Okinawa", airport: "Naha Airport", country: "Japan", tz: "Asia/Tokyo" },
+        { code: "FUK", city: "Fukuoka", airport: "Fukuoka Airport", country: "Japan", tz: "Asia/Tokyo" },
+        { code: "HIJ", city: "Hiroshima", airport: "Hiroshima Airport", country: "Japan", tz: "Asia/Tokyo" },
+        // East Asia — Korea
+        { code: "ICN", city: "Seoul", airport: "Incheon International", country: "South Korea", tz: "Asia/Seoul" },
+        { code: "GMP", city: "Seoul", airport: "Gimpo International", country: "South Korea", tz: "Asia/Seoul" },
+        { code: "PUS", city: "Busan", airport: "Gimhae International", country: "South Korea", tz: "Asia/Seoul" },
+        { code: "CJU", city: "Jeju", airport: "Jeju International", country: "South Korea", tz: "Asia/Seoul" },
+        // East Asia — China & Greater China
+        { code: "PEK", city: "Beijing", airport: "Capital International", country: "China", tz: "Asia/Shanghai" },
+        { code: "PKX", city: "Beijing", airport: "Daxing International", country: "China", tz: "Asia/Shanghai" },
+        { code: "PVG", city: "Shanghai", airport: "Pudong International", country: "China", tz: "Asia/Shanghai" },
+        { code: "SHA", city: "Shanghai", airport: "Hongqiao International", country: "China", tz: "Asia/Shanghai" },
+        { code: "CAN", city: "Guangzhou", airport: "Baiyun International", country: "China", tz: "Asia/Shanghai" },
+        { code: "SZX", city: "Shenzhen", airport: "Bao'an International", country: "China", tz: "Asia/Shanghai" },
+        { code: "CTU", city: "Chengdu", airport: "Tianfu International", country: "China", tz: "Asia/Shanghai" },
+        { code: "CKG", city: "Chongqing", airport: "Jiangbei International", country: "China", tz: "Asia/Shanghai" },
+        { code: "KMG", city: "Kunming", airport: "Changshui International", country: "China", tz: "Asia/Shanghai" },
+        { code: "XIY", city: "Xian", airport: "Xianyang International", country: "China", tz: "Asia/Shanghai" },
+        { code: "WUH", city: "Wuhan", airport: "Tianhe International", country: "China", tz: "Asia/Shanghai" },
+        { code: "HGH", city: "Hangzhou", airport: "Xiaoshan International", country: "China", tz: "Asia/Shanghai" },
+        { code: "CSX", city: "Changsha", airport: "Huanghua International", country: "China", tz: "Asia/Shanghai" },
+        { code: "SHE", city: "Shenyang", airport: "Taoxian International", country: "China", tz: "Asia/Shanghai" },
+        { code: "DLC", city: "Dalian", airport: "Zhoushuizi International", country: "China", tz: "Asia/Shanghai" },
+        { code: "HKG", city: "Hong Kong", airport: "Hong Kong International", country: "Hong Kong", tz: "Asia/Hong_Kong" },
+        { code: "TPE", city: "Taipei", airport: "Taiwan Taoyuan International", country: "Taiwan", tz: "Asia/Taipei" },
+        { code: "TSA", city: "Taipei", airport: "Taipei Songshan Airport", country: "Taiwan", tz: "Asia/Taipei" },
+        { code: "KHH", city: "Kaohsiung", airport: "Kaohsiung International", country: "Taiwan", tz: "Asia/Taipei" },
+        { code: "MFM", city: "Macau", airport: "Macau International", country: "Macau", tz: "Asia/Macau" },
+        { code: "ULN", city: "Ulaanbaatar", airport: "Chinggis Khaan International", country: "Mongolia", tz: "Asia/Ulaanbaatar" },
+        // Central Asia & Caucasus
+        { code: "ALA", city: "Almaty", airport: "Almaty International", country: "Kazakhstan", tz: "Asia/Almaty" },
+        { code: "NQZ", city: "Astana", airport: "Nursultan Nazarbayev International", country: "Kazakhstan", tz: "Asia/Almaty" },
+        { code: "TAS", city: "Tashkent", airport: "Islam Karimov International", country: "Uzbekistan", tz: "Asia/Tashkent" },
+        { code: "FRU", city: "Bishkek", airport: "Manas International", country: "Kyrgyzstan", tz: "Asia/Bishkek" },
+        { code: "ASB", city: "Ashgabat", airport: "Ashgabat International", country: "Turkmenistan", tz: "Asia/Ashgabat" },
+        { code: "GYD", city: "Baku", airport: "Heydar Aliyev International", country: "Azerbaijan", tz: "Asia/Baku" },
+        { code: "EVN", city: "Yerevan", airport: "Zvartnots International", country: "Armenia", tz: "Asia/Yerevan" },
+        { code: "TBS", city: "Tbilisi", airport: "Tbilisi International", country: "Georgia", tz: "Asia/Tbilisi" },
+        // Oceania — Australia
+        { code: "SYD", city: "Sydney", airport: "Kingsford Smith International", country: "Australia", tz: "Australia/Sydney" },
+        { code: "MEL", city: "Melbourne", airport: "Melbourne Airport (Tullamarine)", country: "Australia", tz: "Australia/Melbourne" },
+        { code: "BNE", city: "Brisbane", airport: "Brisbane Airport", country: "Australia", tz: "Australia/Brisbane" },
+        { code: "PER", city: "Perth", airport: "Perth Airport", country: "Australia", tz: "Australia/Perth" },
+        { code: "ADL", city: "Adelaide", airport: "Adelaide Airport", country: "Australia", tz: "Australia/Adelaide" },
+        { code: "CBR", city: "Canberra", airport: "Canberra Airport", country: "Australia", tz: "Australia/Sydney" },
+        { code: "OOL", city: "Gold Coast", airport: "Gold Coast Airport", country: "Australia", tz: "Australia/Brisbane" },
+        { code: "CNS", city: "Cairns", airport: "Cairns Airport", country: "Australia", tz: "Australia/Brisbane" },
+        { code: "DRW", city: "Darwin", airport: "Darwin International", country: "Australia", tz: "Australia/Darwin" },
+        { code: "HBA", city: "Hobart", airport: "Hobart Airport", country: "Australia", tz: "Australia/Hobart" },
+        // Oceania — New Zealand & Pacific
+        { code: "AKL", city: "Auckland", airport: "Auckland Airport", country: "New Zealand", tz: "Pacific/Auckland" },
+        { code: "WLG", city: "Wellington", airport: "Wellington Airport", country: "New Zealand", tz: "Pacific/Auckland" },
+        { code: "CHC", city: "Christchurch", airport: "Christchurch Airport", country: "New Zealand", tz: "Pacific/Auckland" },
+        { code: "NAN", city: "Nadi", airport: "Nadi International", country: "Fiji", tz: "Pacific/Fiji" },
+        { code: "PPT", city: "Papeete", airport: "Faa'a International", country: "French Polynesia", tz: "Pacific/Tahiti" },
+        { code: "GUM", city: "Hagatna", airport: "Antonio B. Won Pat International", country: "Guam", tz: "Pacific/Guam" },
+        { code: "HIR", city: "Honiara", airport: "Honiara International", country: "Solomon Islands", tz: "Pacific/Guadalcanal" },
+        { code: "VLI", city: "Port Vila", airport: "Bauerfield International", country: "Vanuatu", tz: "Pacific/Efate" },
+        { code: "APW", city: "Apia", airport: "Faleolo International", country: "Samoa", tz: "Pacific/Apia" },
+        { code: "TBU", city: "Nukualofa", airport: "Fua'amotu International", country: "Tonga", tz: "Pacific/Tongatapu" }
+      ];
+
+      // Continuous linear interpolation: level 1 = 0.5 h/day, level 5 = 2.5 h/day
+      function shiftRateForLevel(level) {
+        return 0.5 + (level - 1) * 0.5;
+      }
+
+      function levelName(v) {
+        if (v <= 1.5) return "Gentle";
+        if (v <= 2.5) return "Moderate-Gentle";
+        if (v <= 3.5) return "Moderate";
+        if (v <= 4.5) return "Moderate-Aggressive";
+        return "Aggressive";
+      }
+
+      function aggressivenessLabel(v) {
+        const rate = shiftRateForLevel(v);
+        return `Level ${v.toFixed(1)} — ${levelName(v)} · ${rate.toFixed(1)} h/day`;
+      }
+
+      const els = {
+        originInput: document.getElementById("origin-input"),
+        destinationInput: document.getElementById("destination-input"),
+        originList: document.getElementById("origin-list"),
+        destinationList: document.getElementById("destination-list"),
+        originChip: document.getElementById("origin-chip"),
+        destinationChip: document.getElementById("destination-chip"),
+        bedtimeInput: document.getElementById("bedtime-input"),
+        wakeInput: document.getElementById("wake-input"),
+        aggressivenessInput: document.getElementById("aggressiveness-input"),
+        aggressivenessLabel: document.getElementById("aggressiveness-label"),
+        error: document.getElementById("error"),
+        rawOffset: document.getElementById("raw-offset"),
+        effectiveOffset: document.getElementById("effective-offset"),
+        adaptDays: document.getElementById("adapt-days"),
+        destinationZone: document.getElementById("destination-zone"),
+        empty: document.getElementById("empty"),
+        tableWrap: document.getElementById("table-wrap"),
+        scheduleBody: document.getElementById("schedule-body")
+      };
+
+      const state = {
+        origin: null,
+        destination: null,
+        activeIndexByField: { origin: -1, destination: -1 },
+        optionsByField: { origin: [], destination: [] }
+      };
+
+      function normalizeQuery(s) {
+        return s.trim().toLowerCase();
+      }
+
+      function displayAirport(record) {
+        return `${record.code} - ${record.city} (${record.airport})`;
+      }
+
+      function rankMatches(query) {
+        if (!query) {
+          return [];
+        }
+
+        const starts = [];
+        const contains = [];
+
+        for (const a of airports) {
+          const hay = `${a.code} ${a.city} ${a.airport} ${a.country}`.toLowerCase();
+          if (hay.startsWith(query) || a.code.toLowerCase().startsWith(query) || a.city.toLowerCase().startsWith(query) || a.country.toLowerCase().startsWith(query)) {
+            starts.push(a);
+          } else if (hay.includes(query)) {
+            contains.push(a);
+          }
+        }
+
+        return [...starts, ...contains].slice(0, 8);
+      }
+
+      function openList(field, options) {
+        const list = field === "origin" ? els.originList : els.destinationList;
+        const input = field === "origin" ? els.originInput : els.destinationInput;
+        state.optionsByField[field] = options;
+        state.activeIndexByField[field] = -1;
+
+        if (options.length === 0) {
+          list.innerHTML = '<div class="suggestion-item" aria-disabled="true">No matches</div>';
+          list.hidden = false;
+          input.setAttribute("aria-expanded", "true");
+          return;
+        }
+
+        list.innerHTML = options
+          .map((opt, i) => `<div class="suggestion-item" role="option" data-field="${field}" data-index="${i}">${displayAirport(opt)}</div>`)
+          .join("");
+
+        list.hidden = false;
+        input.setAttribute("aria-expanded", "true");
+      }
+
+      function closeList(field) {
+        const list = field === "origin" ? els.originList : els.destinationList;
+        const input = field === "origin" ? els.originInput : els.destinationInput;
+        list.hidden = true;
+        input.setAttribute("aria-expanded", "false");
+      }
+
+      function setActiveOption(field, nextIndex) {
+        const list = field === "origin" ? els.originList : els.destinationList;
+        const items = [...list.querySelectorAll(".suggestion-item[data-index]")];
+        if (items.length === 0) {
+          return;
+        }
+        state.activeIndexByField[field] = ((nextIndex % items.length) + items.length) % items.length;
+        items.forEach((item, idx) => item.classList.toggle("active", idx === state.activeIndexByField[field]));
+      }
+
+      function selectAirport(field, record) {
+        if (field === "origin") {
+          state.origin = record;
+          els.originInput.value = displayAirport(record);
+          els.originChip.textContent = `${record.code} | ${record.city}, ${record.country}`;
+          els.originChip.hidden = false;
+        } else {
+          state.destination = record;
+          els.destinationInput.value = displayAirport(record);
+          els.destinationChip.textContent = `${record.code} | ${record.city}, ${record.country}`;
+          els.destinationChip.hidden = false;
+        }
+
+        closeList(field);
+        recalcAndRender();
+      }
+
+      function bindSearch(field) {
+        const input = field === "origin" ? els.originInput : els.destinationInput;
+        const list = field === "origin" ? els.originList : els.destinationList;
+
+        input.addEventListener("input", () => {
+          const q = normalizeQuery(input.value);
+          if (!q) {
+            if (field === "origin") state.origin = null;
+            if (field === "destination") state.destination = null;
+            closeList(field);
+            recalcAndRender();
+            return;
+          }
+          openList(field, rankMatches(q));
+        });
+
+        input.addEventListener("keydown", (e) => {
+          const options = state.optionsByField[field];
+          if (list.hidden || options.length === 0) {
+            return;
+          }
+
+          if (e.key === "ArrowDown") {
+            e.preventDefault();
+            setActiveOption(field, state.activeIndexByField[field] + 1);
+          } else if (e.key === "ArrowUp") {
+            e.preventDefault();
+            setActiveOption(field, state.activeIndexByField[field] - 1);
+          } else if (e.key === "Enter") {
+            e.preventDefault();
+            const idx = state.activeIndexByField[field] >= 0 ? state.activeIndexByField[field] : 0;
+            const selected = options[idx];
+            if (selected) {
+              selectAirport(field, selected);
+            }
+          } else if (e.key === "Escape") {
+            closeList(field);
+          }
+        });
+
+        list.addEventListener("mousedown", (e) => {
+          const target = e.target.closest(".suggestion-item[data-index]");
+          if (!target) {
+            return;
+          }
+          const idx = Number(target.dataset.index);
+          const record = state.optionsByField[field][idx];
+          if (record) {
+            selectAirport(field, record);
+          }
+        });
+
+        input.addEventListener("blur", () => {
+          setTimeout(() => closeList(field), 120);
+        });
+      }
+
+      function toMinutes(value) {
+        const parts = value.split(":").map((s) => Number(s));
+        if (parts.length !== 2 || Number.isNaN(parts[0]) || Number.isNaN(parts[1])) {
+          return null;
+        }
+        const [h, m] = parts;
+        if (h < 0 || h > 23 || m < 0 || m > 59) {
+          return null;
+        }
+        return h * 60 + m;
+      }
+
+      function minutesToClock(minutes) {
+        const norm = ((Math.round(minutes) % 1440) + 1440) % 1440;
+        const h24 = Math.floor(norm / 60);
+        const m = norm % 60;
+        const suffix = h24 >= 12 ? "PM" : "AM";
+        const h12 = h24 % 12 || 12;
+        return `${h12}:${String(m).padStart(2, "0")} ${suffix}`;
+      }
+
+      function getDateTimePartsInZone(timeZone, date = new Date()) {
+        const dtf = new Intl.DateTimeFormat("en-US", {
+          timeZone,
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+          hour12: false
+        });
+
+        const parts = dtf.formatToParts(date);
+        const get = (type) => Number(parts.find((p) => p.type === type).value);
+
+        return {
+          year: get("year"),
+          month: get("month"),
+          day: get("day"),
+          hour: get("hour"),
+          minute: get("minute"),
+          second: get("second")
+        };
+      }
+
+      function getUtcOffsetHours(timeZone, date = new Date()) {
+        const { year, month, day, hour, minute, second } = getDateTimePartsInZone(timeZone, date);
+
+        const asUtcMs = Date.UTC(year, month - 1, day, hour, minute, second);
+        return (asUtcMs - date.getTime()) / 3600000;
+      }
+
+      function getCurrentDayUtcOffsetHours(timeZone, referenceDate = new Date()) {
+        const { year, month, day } = getDateTimePartsInZone(timeZone, referenceDate);
+
+        // Resolve local noon for the zone's current calendar day to avoid edge cases
+        // right around DST transition hours.
+        const targetLocalNoonMs = Date.UTC(year, month - 1, day, 12, 0, 0);
+        const guessMs = targetLocalNoonMs;
+        const guessParts = getDateTimePartsInZone(timeZone, new Date(guessMs));
+        const guessLocalMs = Date.UTC(
+          guessParts.year,
+          guessParts.month - 1,
+          guessParts.day,
+          guessParts.hour,
+          guessParts.minute,
+          guessParts.second
+        );
+
+        const correctedMs = guessMs + (targetLocalNoonMs - guessLocalMs);
+        return getUtcOffsetHours(timeZone, new Date(correctedMs));
+      }
+
+      function shortestOffset(raw) {
+        let effective = ((raw + 12) % 24 + 24) % 24 - 12;
+        if (effective === -12 && raw > 0) {
+          effective = 12;
+        }
+        return effective;
+      }
+
+      function fmtSigned(value) {
+        const rounded = Math.round(value * 10) / 10;
+        const sign = rounded > 0 ? "+" : "";
+        return `${sign}${rounded}h`;
+      }
+
+      function validate() {
+        if (!state.origin || !state.destination) {
+          return "Select both origin and destination from the search results.";
+        }
+        if (state.origin.code === state.destination.code) {
+          return "Origin and destination cannot be identical.";
+        }
+
+        const bedMins = toMinutes(els.bedtimeInput.value);
+        const wakeMins = toMinutes(els.wakeInput.value);
+        if (bedMins === null || wakeMins === null) {
+          return "Enter valid local times for bedtime and wake time.";
+        }
+        if (bedMins === wakeMins) {
+          return "Bedtime and wake time cannot be identical.";
+        }
+        return "";
+      }
+
+      function recalcAndRender() {
+        els.aggressivenessLabel.textContent = aggressivenessLabel(Number(els.aggressivenessInput.value));
+
+        const error = validate();
+        if (error) {
+          els.error.textContent = error;
+          els.tableWrap.hidden = true;
+          els.empty.hidden = false;
+          els.rawOffset.textContent = "-";
+          els.effectiveOffset.textContent = "-";
+          els.adaptDays.textContent = "-";
+          els.destinationZone.textContent = "-";
+          return;
+        }
+
+        els.error.textContent = "";
+
+        const aggressiveness = Number(els.aggressivenessInput.value);
+        const shiftRate = shiftRateForLevel(aggressiveness);
+        const today = new Date();
+        const originOffset = getCurrentDayUtcOffsetHours(state.origin.tz, today);
+        const destinationOffset = getCurrentDayUtcOffsetHours(state.destination.tz, today);
+        const rawOffset = destinationOffset - originOffset;
+        const effectiveOffset = shortestOffset(rawOffset);
+        const days = Math.ceil(Math.abs(effectiveOffset) / shiftRate);
+
+        const bedtime = toMinutes(els.bedtimeInput.value);
+        const wake = toMinutes(els.wakeInput.value);
+
+        els.rawOffset.textContent = fmtSigned(rawOffset);
+        els.effectiveOffset.textContent = fmtSigned(effectiveOffset);
+        els.adaptDays.textContent = String(days);
+        els.destinationZone.textContent = state.destination.tz;
+
+        const rowCount = Math.max(1, days);
+        // Direction word: body clock is ahead → need to shift earlier; behind → shift later
+        const dirWord = effectiveOffset > 0 ? "earlier" : "later";
+        const shiftPerDay = Math.abs(shiftRate);
+
+        // On arrival the user's body clock reads their home bedtime,
+        // but the destination clock is offset by effectiveOffset hours.
+        // arrivalBed is that body-clock bedtime expressed in destination local time.
+        const arrivalBed = bedtime + effectiveOffset * 60;
+        const arrivalWake = wake + effectiveOffset * 60;
+
+        let rows = "";
+        for (let day = 1; day <= rowCount; day++) {
+          // Each day we recover shiftRate hours back toward the target (normal bedtime in dest tz).
+          const cumulative = days === 0 ? 0 : Math.sign(effectiveOffset) * Math.min(Math.abs(effectiveOffset), shiftRate * day);
+          const bedLocal = arrivalBed - cumulative * 60;
+          const wakeLocal = arrivalWake - cumulative * 60;
+          const noteHours = days === 0 ? 0 : Math.min(shiftPerDay, Math.abs(effectiveOffset - (shiftRate * (day - 1))));
+          const note = days === 0
+            ? "No shift needed"
+            : `Shift sleep ${noteHours.toFixed(1)}h ${dirWord}`;
+
+          rows += `
+            <tr>
+              <td class="mono">Day ${day}</td>
+              <td class="mono">${minutesToClock(bedLocal)}</td>
+              <td class="mono">${minutesToClock(wakeLocal)}</td>
+              <td>${note}</td>
+            </tr>
+          `;
+        }
+
+        els.scheduleBody.innerHTML = rows;
+        els.empty.hidden = true;
+        els.tableWrap.hidden = false;
+      }
+
+      bindSearch("origin");
+      bindSearch("destination");
+
+      [els.bedtimeInput, els.wakeInput, els.aggressivenessInput].forEach((el) => {
+        el.addEventListener("input", recalcAndRender);
+        el.addEventListener("change", recalcAndRender);
+      });
+
+      recalcAndRender();
+    </script>
+  </body>
+</html>
+
+  </body>
+</html>
