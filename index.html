@@ -310,6 +310,20 @@
         margin-top: 14px;
         padding-top: 14px;
       }
+      .recovery-toggle {
+        margin-top: 8px;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 0.72rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--amber-bright);
+      }
+      .recovery-toggle input {
+        accent-color: #FFB800;
+      }
       [hidden] { display: none !important; }
       .advanced-section {
         margin-top: 12px;
@@ -830,9 +844,13 @@
             <div class="slider-row">
               <span class="slider-lbl">Gentle</span>
               <input id="aggressiveness-input" type="range" min="1" max="5" step="0.04" value="3" />
-              <span class="slider-lbl">Aggressive</span>
+              <span class="slider-lbl" id="slider-max-label">Aggressive</span>
             </div>
             <div class="aggressiveness-display" id="aggressiveness-label"></div>
+            <label class="recovery-toggle" for="alien-mode-input">
+              <input id="alien-mode-input" type="checkbox" />
+              Alien Mode
+            </label>
           </div>
 
           <div id="error" class="error-banner" role="alert" aria-live="assertive"></div>
@@ -899,7 +917,16 @@
 
         function lerp(a, b, t) { return a + (b - a) * t; }
         function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
-        function getT() { return (Number(document.getElementById('aggressiveness-input').value) - 1) / 4; }
+        function getAggressivenessNormalized() {
+          const sl = document.getElementById('aggressiveness-input');
+          if (!sl) return 0;
+          const min = Number(sl.min || 1);
+          const max = Number(sl.max || 5);
+          const value = Number(sl.value);
+          const range = Math.max(0.0001, max - min);
+          return clamp((value - min) / range, 0, 1);
+        }
+        function getT() { return getAggressivenessNormalized(); }
 
         function colorAt(stops, t) {
           if (t <= stops[0][0]) return stops[0][1];
@@ -1051,7 +1078,7 @@
           // Update slider track fill: teal (clear) → amber (cloudy/rain) → red (storm)
           const sl = document.getElementById('aggressiveness-input');
           if (sl) {
-            const pct  = ((Number(sl.value) - 1) / 4) * 100;
+            const pct  = getAggressivenessNormalized() * 100;
             const fill = t < 0.38 ? '#00E5CC' : t < 0.68 ? '#FFB800' : '#FF5555';
             sl.style.background = `linear-gradient(to right, ${fill} 0%, ${fill} ${pct}%, rgba(255,255,255,0.12) ${pct}%, rgba(255,255,255,0.12) 100%)`;
           }
@@ -1508,9 +1535,11 @@
         { code: "TBU", city: "Nukualofa", airport: "Fua'amotu International", country: "Tonga", tz: "Pacific/Tongatapu" }
       ];
 
-      // Continuous linear interpolation: level 1 = 0.5 h/day, level 5 = 2.5 h/day
       function shiftRateForLevel(level) {
-        return 0.5 + (level - 1) * 0.5;
+        if (level <= 5) {
+          return 0.5 + (level - 1) * 0.5;
+        }
+        return 6.0;
       }
 
       function levelName(v) {
@@ -1518,7 +1547,8 @@
         if (v <= 2.5) return "Moderate-Gentle";
         if (v <= 3.5) return "Moderate";
         if (v <= 4.5) return "Moderate-Aggressive";
-        return "Aggressive";
+        if (v <= 5.0) return "Aggressive";
+        return "Alien";
       }
 
       function aggressivenessLabel(v) {
@@ -1537,6 +1567,8 @@
         wakeInput: document.getElementById("wake-input"),
         aggressivenessInput: document.getElementById("aggressiveness-input"),
         aggressivenessLabel: document.getElementById("aggressiveness-label"),
+        alienModeInput: document.getElementById("alien-mode-input"),
+        sliderMaxLabel: document.getElementById("slider-max-label"),
         error: document.getElementById("error"),
         rawOffset: document.getElementById("raw-offset"),
         effectiveOffset: document.getElementById("effective-offset"),
@@ -1942,6 +1974,11 @@
 
       function recalcAndRender() {
         els.advancedFields.hidden = !els.advancedModeInput.checked;
+        els.aggressivenessInput.max = els.alienModeInput.checked ? "6" : "5";
+        els.sliderMaxLabel.textContent = els.alienModeInput.checked ? "Alien" : "Aggressive";
+        if (!els.alienModeInput.checked && Number(els.aggressivenessInput.value) > 5) {
+          els.aggressivenessInput.value = "5";
+        }
         els.aggressivenessLabel.textContent = aggressivenessLabel(Number(els.aggressivenessInput.value));
 
         const error = validate();
@@ -2075,6 +2112,7 @@
         els.bedtimeInput,
         els.wakeInput,
         els.aggressivenessInput,
+        els.alienModeInput,
         els.advancedModeInput,
         els.departureTimeInput,
         els.arrivalTimeInput
