@@ -159,6 +159,29 @@
         margin-top: 3px;
         text-transform: uppercase;
       }
+      .help-pill {
+        appearance: none;
+        border: 1px solid var(--amber-dim);
+        border-radius: 999px;
+        padding: 5px 12px;
+        background: rgba(255, 184, 0, 0.06);
+        color: var(--amber);
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 0.65rem;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        cursor: pointer;
+        white-space: nowrap;
+        transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+      }
+      .help-pill:hover,
+      .help-pill:focus-visible {
+        border-color: var(--amber);
+        background: rgba(255, 184, 0, 0.12);
+        box-shadow: 0 0 0 2px rgba(255, 184, 0, 0.18);
+        outline: none;
+      }
+
       .weather-badge {
         font-family: "IBM Plex Mono", monospace;
         font-size: 0.65rem;
@@ -189,7 +212,10 @@
       }
 
       /* ── Controls panel ── */
-      .panel-controls { padding: 16px 18px; }
+      .panel-controls {
+        padding: 16px 18px;
+        background: rgba(6, 12, 26, 0.30);
+      }
       .controls-grid {
         display: grid;
         grid-template-columns: 1fr 1fr;
@@ -214,6 +240,7 @@
 
       input[type="text"],
       input[type="time"] {
+        appearance: none;
         width: 100%;
         background: rgba(255, 184, 0, 0.06);
         border: 1px solid rgba(255, 184, 0, 0.22);
@@ -283,6 +310,101 @@
         margin-top: 14px;
         padding-top: 14px;
       }
+      .advanced-section {
+        margin-top: 12px;
+      }
+      .advanced-toggle {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 0.72rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--amber-bright);
+      }
+      .advanced-toggle input {
+        accent-color: #FFB800;
+      }
+      .advanced-fields {
+        margin-top: 10px;
+      }
+      .datetime-row {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+      .day-picker {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex: 1;
+        background: rgba(255, 184, 0, 0.06);
+        border: 1px solid rgba(255, 184, 0, 0.22);
+        border-radius: 8px;
+        padding: 7px 10px;
+        min-width: 0;
+      }
+      .day-label {
+        flex: 1;
+        text-align: center;
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 0.82rem;
+        color: var(--text);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .day-btn {
+        appearance: none;
+        -webkit-appearance: none;
+        background: none;
+        border: 1px solid rgba(255, 184, 0, 0.35);
+        border-radius: 4px;
+        color: var(--amber);
+        font-size: 1.1rem;
+        line-height: 1;
+        width: 26px;
+        height: 26px;
+        cursor: pointer;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background 0.15s, box-shadow 0.15s;
+      }
+      .day-btn:hover, .day-btn:focus-visible {
+        background: rgba(255, 184, 0, 0.15);
+        box-shadow: 0 0 0 2px rgba(255, 184, 0, 0.2);
+        outline: none;
+      }
+      .day-btn:disabled {
+        opacity: 0.3;
+        cursor: default;
+      }
+      .advanced-hint {
+        margin-top: 6px;
+        color: var(--text-muted);
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 0.7rem;
+        line-height: 1.45;
+      }
+      .advanced-advice {
+        margin-top: 9px;
+        padding: 8px 9px;
+        border-radius: 8px;
+        border: 1px solid rgba(0, 229, 204, 0.22);
+        background: rgba(0, 229, 204, 0.06);
+        color: var(--teal);
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 0.74rem;
+        line-height: 1.55;
+      }
+      .advanced-advice.warning {
+        color: #FFB0B0;
+        border-color: rgba(255, 85, 85, 0.34);
+        background: rgba(255, 85, 85, 0.08);
+      }
       .slider-row {
         display: flex;
         align-items: center;
@@ -298,6 +420,7 @@
         flex-shrink: 0;
       }
       input[type="range"] {
+        appearance: none;
         -webkit-appearance: none;
         flex: 1;
         height: 4px;
@@ -309,6 +432,7 @@
         cursor: pointer;
       }
       input[type="range"]::-webkit-slider-thumb {
+        appearance: none;
         -webkit-appearance: none;
         width: 18px;
         height: 18px;
@@ -353,7 +477,10 @@
       .error-banner:empty { display: none; }
 
       /* ── Summary panel ── */
-      .panel-summary { padding: 16px 18px; }
+      .panel-summary {
+        padding: 16px 18px;
+        background: rgba(6, 12, 26, 0.30);
+      }
       .summary-grid {
         display: grid;
         grid-template-columns: 1fr 1fr;
@@ -382,7 +509,10 @@
       }
 
       /* ── Table panel ── */
-      .panel-table { padding: 16px 18px; }
+      .panel-table {
+        padding: 16px 18px;
+        background: rgba(6, 12, 26, 0.30);
+      }
       .empty-state {
         padding: 18px;
         border: 1px dashed rgba(255, 184, 0, 0.25);
@@ -428,6 +558,96 @@
         letter-spacing: 0.06em;
         text-align: center;
       }
+      .footer-note a {
+        color: var(--teal);
+        text-decoration: none;
+        border-bottom: 1px solid rgba(0, 229, 204, 0.35);
+      }
+      .footer-note a:hover,
+      .footer-note a:focus-visible {
+        color: #6ff6e7;
+        border-bottom-color: var(--teal);
+      }
+
+      /* Help modal */
+      .help-modal {
+        position: fixed;
+        inset: 0;
+        z-index: 250;
+        display: grid;
+        place-items: center;
+        padding: 20px;
+        background: rgba(5, 10, 20, 0.62);
+      }
+      .help-modal[hidden] { display: none; }
+      .help-dialog {
+        width: min(640px, 100%);
+        background: rgba(6, 12, 26, 0.94);
+        border: 1px solid rgba(255, 184, 0, 0.35);
+        border-radius: 12px;
+        box-shadow: 0 16px 42px rgba(0, 0, 0, 0.65);
+        padding: 18px 18px 14px;
+      }
+      .help-title {
+        font-size: 1rem;
+        letter-spacing: 0.04em;
+        color: var(--amber-bright);
+        margin-bottom: 10px;
+      }
+      .help-copy {
+        color: var(--text);
+        font-size: 0.86rem;
+        line-height: 1.6;
+      }
+      .help-copy ol {
+        margin: 8px 0 10px 18px;
+      }
+      .help-meta {
+        margin-top: 10px;
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        line-height: 1.5;
+      }
+      .help-actions {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        margin-top: 14px;
+        border-top: 1px solid rgba(255, 184, 0, 0.18);
+        padding-top: 12px;
+      }
+      .help-checkbox {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 0.74rem;
+        color: var(--text-muted);
+      }
+      .help-checkbox input {
+        accent-color: #FFB800;
+      }
+      .help-close {
+        appearance: none;
+        border: 1px solid var(--amber-dim);
+        border-radius: 8px;
+        background: rgba(255, 184, 0, 0.08);
+        color: var(--amber-bright);
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 0.74rem;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        padding: 7px 12px;
+        cursor: pointer;
+      }
+      .help-close:hover,
+      .help-close:focus-visible {
+        border-color: var(--amber);
+        box-shadow: 0 0 0 2px rgba(255, 184, 0, 0.18);
+        outline: none;
+      }
 
       /* ── Responsive ── */
       @media (max-width: 860px) {
@@ -444,13 +664,16 @@
         .field-wide { grid-column: 1 / -1; }
         .stat-tile strong { font-size: 0.9rem; }
         .stat-tile small { font-size: 0.55rem; }
-        .weather-badge { font-size: 0.58rem; padding: 4px 8px; }
+        .help-pill { font-size: 0.58rem; padding: 4px 10px; }
         .hud-corner { width: 36px; height: 36px; }
         .panel-label { font-size: 0.58rem; }
         label { font-size: 0.6rem; }
         input[type="text"],
         input[type="time"] { font-size: 0.82rem; padding: 7px 9px; }
         .aggressiveness-display { font-size: 0.7rem; }
+        .help-dialog { padding: 14px 14px 12px; }
+        .help-copy { font-size: 0.8rem; }
+        .help-actions { flex-direction: column; align-items: flex-start; }
       }
     </style>
   </head>
@@ -473,8 +696,32 @@
           <h1>Jet Lag Recovery System</h1>
           <p class="subtitle">JL&#8209;01 &middot; Route Adaptation Timeline Generator</p>
         </div>
-        <div id="weather-badge" class="weather-badge">CLEAR</div>
+        <button id="help-pill" class="help-pill" type="button" aria-haspopup="dialog" aria-controls="help-modal">Help</button>
       </header>
+
+      <div id="help-modal" class="help-modal" role="dialog" aria-modal="true" aria-labelledby="help-title" hidden>
+        <div class="help-dialog">
+          <h2 id="help-title" class="help-title">How to use this planner</h2>
+          <div class="help-copy">
+            <p>Build your recovery plan in 4 quick steps:</p>
+            <ol>
+              <li>Select your origin and destination from the airport search suggestions.</li>
+              <li>Set your usual bedtime and wake time.</li>
+              <li>Move the recovery slider from Gentle to Aggressive.</li>
+              <li>Follow the destination-time sleep plan shown in the table.</li>
+            </ol>
+            <p>This tool accounts for daylight saving time at both origin and destination when calculating the time-zone difference for today.</p>
+            <p>The entire sleep schedule is shown in destination local time.</p>
+          </div>
+          <div class="help-actions">
+            <label class="help-checkbox" for="help-show-next">
+              <input id="help-show-next" type="checkbox" checked />
+              Show this next time
+            </label>
+            <button id="help-close" class="help-close" type="button">Close</button>
+          </div>
+        </div>
+      </div>
 
       <!-- Controls + Summary grid -->
       <div class="main-grid" aria-live="polite">
@@ -510,6 +757,45 @@
               <input id="wake-input" type="time" value="07:00" />
             </div>
 
+          </div>
+
+          <div class="advanced-section">
+            <label class="advanced-toggle" for="advanced-mode-input">
+              <input id="advanced-mode-input" type="checkbox" />
+              Advanced Mode
+            </label>
+
+            <div id="advanced-fields" class="advanced-fields controls-grid" hidden>
+              <div class="field field-wide">
+                <label>Departure (Origin Local Time)</label>
+                <div class="datetime-row">
+                  <div class="day-picker">
+                    <button type="button" class="day-btn" id="dep-day-minus" aria-label="Earlier day">−</button>
+                    <span id="dep-day-label" class="day-label">Today</span>
+                    <button type="button" class="day-btn" id="dep-day-plus" aria-label="Later day">+</button>
+                  </div>
+                  <input id="departure-time-input" type="time" value="12:00" />
+                </div>
+              </div>
+
+              <div class="field field-wide">
+                <label>Arrival (Destination Local Time)</label>
+                <div class="datetime-row">
+                  <div class="day-picker">
+                    <button type="button" class="day-btn" id="arr-day-minus" aria-label="Earlier day">−</button>
+                    <span id="arr-day-label" class="day-label">Today</span>
+                    <button type="button" class="day-btn" id="arr-day-plus" aria-label="Later day">+</button>
+                  </div>
+                  <input id="arrival-time-input" type="time" value="12:00" />
+                </div>
+              </div>
+
+              <p class="advanced-hint field-wide">
+                Tip: include travel time to the departure airport and from arrival airport in these times.
+              </p>
+
+              <div id="advanced-advice" class="advanced-advice field-wide" hidden></div>
+            </div>
           </div>
 
           <div class="slider-section">
@@ -569,7 +855,7 @@
             <tbody id="schedule-body"></tbody>
           </table>
         </div>
-        <p class="footer-note">Informational guidance only &mdash; not medical advice.</p>
+        <p class="footer-note">Created by Yen Choi &middot; <a href="https://linkedin.com/in/yenchoi" target="_blank" rel="noopener noreferrer">linkedin.com/in/yenchoi</a></p>
       </section>
 
     </main>
@@ -1231,14 +1517,31 @@
         destinationZone: document.getElementById("destination-zone"),
         empty: document.getElementById("empty"),
         tableWrap: document.getElementById("table-wrap"),
-        scheduleBody: document.getElementById("schedule-body")
+        scheduleBody: document.getElementById("schedule-body"),
+        advancedModeInput: document.getElementById("advanced-mode-input"),
+        advancedFields: document.getElementById("advanced-fields"),
+        departureTimeInput: document.getElementById("departure-time-input"),
+        departureDayMinus: document.getElementById("dep-day-minus"),
+        departureDayPlus: document.getElementById("dep-day-plus"),
+        departureDayLabel: document.getElementById("dep-day-label"),
+        arrivalTimeInput: document.getElementById("arrival-time-input"),
+        arrivalDayMinus: document.getElementById("arr-day-minus"),
+        arrivalDayPlus: document.getElementById("arr-day-plus"),
+        arrivalDayLabel: document.getElementById("arr-day-label"),
+        advancedAdvice: document.getElementById("advanced-advice"),
+        helpPill: document.getElementById("help-pill"),
+        helpModal: document.getElementById("help-modal"),
+        helpClose: document.getElementById("help-close"),
+        helpShowNext: document.getElementById("help-show-next")
       };
 
       const state = {
         origin: null,
         destination: null,
         activeIndexByField: { origin: -1, destination: -1 },
-        optionsByField: { origin: [], destination: [] }
+        optionsByField: { origin: [], destination: [] },
+        departureDayOffset: 0,
+        arrivalDayOffset: 0
       };
 
       function normalizeQuery(s) {
@@ -1402,6 +1705,167 @@
         return `${h12}:${String(m).padStart(2, "0")} ${suffix}`;
       }
 
+      function dayLabelFromOffset(offset) {
+        switch (offset) {
+          case -2: return "2 days ago";
+          case -1: return "Yesterday";
+          case 0:  return "Today";
+          case 1:  return "Tomorrow";
+          case 2:  return "Day after tomorrow";
+          default: return offset > 0 ? `+${offset} days` : `${offset} days`;
+        }
+      }
+
+      function buildDateTimePartsFromOffset(dayOffset, timeValue) {
+        const mins = toMinutes(timeValue);
+        if (mins === null) return null;
+        const d = new Date();
+        d.setDate(d.getDate() + dayOffset);
+        return {
+          year: d.getFullYear(),
+          month: d.getMonth() + 1,
+          day: d.getDate(),
+          hour: Math.floor(mins / 60),
+          minute: mins % 60,
+          second: 0
+        };
+      }
+
+      function zonedLocalDateTimeToUtcMs(timeZone, parts) {
+        // Iterative correction from a UTC guess to an exact local wall-clock time in the given zone.
+        const targetLocalMs = Date.UTC(parts.year, parts.month - 1, parts.day, parts.hour, parts.minute, parts.second || 0);
+        let guessMs = targetLocalMs;
+        for (let i = 0; i < 4; i++) {
+          const p = getDateTimePartsInZone(timeZone, new Date(guessMs));
+          const asLocalMs = Date.UTC(p.year, p.month - 1, p.day, p.hour, p.minute, p.second);
+          guessMs += targetLocalMs - asLocalMs;
+        }
+        return guessMs;
+      }
+
+      function addDaysToYmd(year, month, day, add) {
+        const d = new Date(Date.UTC(year, month - 1, day + add));
+        return { year: d.getUTCFullYear(), month: d.getUTCMonth() + 1, day: d.getUTCDate() };
+      }
+
+      function overlapHours(startA, endA, startB, endB) {
+        const start = Math.max(startA, startB);
+        const end = Math.min(endA, endB);
+        return end > start ? (end - start) / 3600000 : 0;
+      }
+
+      function sleepDurationHours(bedtimeMins, wakeMins) {
+        const raw = wakeMins >= bedtimeMins
+          ? wakeMins - bedtimeMins
+          : 1440 - bedtimeMins + wakeMins;
+        return raw / 60;
+      }
+
+      function setAdvancedAdvice(message, isWarning) {
+        if (!message) {
+          els.advancedAdvice.hidden = true;
+          els.advancedAdvice.textContent = "";
+          els.advancedAdvice.classList.remove("warning");
+          return;
+        }
+        els.advancedAdvice.hidden = false;
+        els.advancedAdvice.textContent = message;
+        els.advancedAdvice.classList.toggle("warning", Boolean(isWarning));
+      }
+
+      function renderAdvancedAdvice() {
+        if (!els.advancedModeInput.checked) {
+          setAdvancedAdvice("", false);
+          return;
+        }
+        if (!state.origin || !state.destination) {
+          setAdvancedAdvice("Select origin and destination to calculate in-transit sleep advice.", true);
+          return;
+        }
+
+        const depParts = buildDateTimePartsFromOffset(state.departureDayOffset, els.departureTimeInput.value);
+        const arrParts = buildDateTimePartsFromOffset(state.arrivalDayOffset, els.arrivalTimeInput.value);
+        if (!depParts || !arrParts) {
+          setAdvancedAdvice("Enter departure and arrival times to get advanced advice.", true);
+          return;
+        }
+
+        const depUtcMs = zonedLocalDateTimeToUtcMs(state.origin.tz, depParts);
+        const arrUtcMs = zonedLocalDateTimeToUtcMs(state.destination.tz, arrParts);
+        if (arrUtcMs <= depUtcMs) {
+          setAdvancedAdvice("Arrival time must be after departure time.", true);
+          return;
+        }
+
+        const bedtimeMins = toMinutes(els.bedtimeInput.value);
+        const wakeMins = toMinutes(els.wakeInput.value);
+        if (bedtimeMins === null || wakeMins === null) {
+          setAdvancedAdvice("Enter valid bedtime and wake times to calculate advanced advice.", true);
+          return;
+        }
+
+        const normalSleepHours = sleepDurationHours(bedtimeMins, wakeMins);
+        const travelHours = (arrUtcMs - depUtcMs) / 3600000;
+
+        const depLocalInDest = getDateTimePartsInZone(state.destination.tz, new Date(depUtcMs));
+        const arrLocalInDest = getDateTimePartsInZone(state.destination.tz, new Date(arrUtcMs));
+        const bedHour = Math.floor(bedtimeMins / 60);
+        const bedMinute = bedtimeMins % 60;
+
+        const startDate = addDaysToYmd(depLocalInDest.year, depLocalInDest.month, depLocalInDest.day, -1);
+        const endDate = addDaysToYmd(arrLocalInDest.year, arrLocalInDest.month, arrLocalInDest.day, 1);
+        const startRef = Date.UTC(startDate.year, startDate.month - 1, startDate.day);
+        const endRef = Date.UTC(endDate.year, endDate.month - 1, endDate.day);
+        const daysSpan = Math.max(0, Math.round((endRef - startRef) / 86400000));
+
+        let lostSleepHours = 0;
+        for (let i = 0; i <= daysSpan; i++) {
+          const d = new Date(startRef + i * 86400000);
+          const y = d.getUTCFullYear();
+          const m = d.getUTCMonth() + 1;
+          const day = d.getUTCDate();
+          const sleepStart = zonedLocalDateTimeToUtcMs(state.destination.tz, {
+            year: y,
+            month: m,
+            day,
+            hour: bedHour,
+            minute: bedMinute,
+            second: 0
+          });
+          const sleepEnd = sleepStart + normalSleepHours * 3600000;
+          lostSleepHours += overlapHours(depUtcMs, arrUtcMs, sleepStart, sleepEnd);
+        }
+
+        const planeSleepHours = Math.min(lostSleepHours, travelHours * 0.6);
+        let afterLandingSleepHours = Math.max(0, lostSleepHours - planeSleepHours);
+
+        const bedTodayAtArrival = zonedLocalDateTimeToUtcMs(state.destination.tz, {
+          year: arrLocalInDest.year,
+          month: arrLocalInDest.month,
+          day: arrLocalInDest.day,
+          hour: bedHour,
+          minute: bedMinute,
+          second: 0
+        });
+        const nextBedDate = bedTodayAtArrival > arrUtcMs
+          ? { year: arrLocalInDest.year, month: arrLocalInDest.month, day: arrLocalInDest.day }
+          : addDaysToYmd(arrLocalInDest.year, arrLocalInDest.month, arrLocalInDest.day, 1);
+        const nextBedUtcMs = zonedLocalDateTimeToUtcMs(state.destination.tz, {
+          year: nextBedDate.year,
+          month: nextBedDate.month,
+          day: nextBedDate.day,
+          hour: bedHour,
+          minute: bedMinute,
+          second: 0
+        });
+
+        const hoursUntilNextBed = Math.max(0, (nextBedUtcMs - arrUtcMs) / 3600000);
+        afterLandingSleepHours = Math.min(afterLandingSleepHours, hoursUntilNextBed);
+
+        const message = `Sleep during travel: ${planeSleepHours.toFixed(1)}h · After landing: ${afterLandingSleepHours.toFixed(1)}h`;
+        setAdvancedAdvice(message, false);
+      }
+
       function getDateTimePartsInZone(timeZone, date = new Date()) {
         const dtf = new Intl.DateTimeFormat("en-US", {
           timeZone,
@@ -1489,6 +1953,7 @@
       }
 
       function recalcAndRender() {
+        els.advancedFields.hidden = !els.advancedModeInput.checked;
         els.aggressivenessLabel.textContent = aggressivenessLabel(Number(els.aggressivenessInput.value));
 
         const error = validate();
@@ -1500,6 +1965,7 @@
           els.effectiveOffset.textContent = "-";
           els.adaptDays.textContent = "-";
           els.destinationZone.textContent = "-";
+          renderAdvancedAdvice();
           return;
         }
 
@@ -1557,16 +2023,113 @@
         els.scheduleBody.innerHTML = rows;
         els.empty.hidden = true;
         els.tableWrap.hidden = false;
+        renderAdvancedAdvice();
+      }
+
+      function initHelpModal() {
+        const STORAGE_KEY = "jetlag_show_help_next_time";
+        const readPref = () => {
+          try {
+            const v = localStorage.getItem(STORAGE_KEY);
+            return v !== "false";
+          } catch {
+            return true;
+          }
+        };
+        const savePref = (enabled) => {
+          try {
+            localStorage.setItem(STORAGE_KEY, enabled ? "true" : "false");
+          } catch {
+            // Ignore storage failures silently.
+          }
+        };
+
+        const openHelp = () => {
+          els.helpModal.hidden = false;
+          els.helpPill.setAttribute("aria-expanded", "true");
+          els.helpClose.focus();
+        };
+        const closeHelp = () => {
+          els.helpModal.hidden = true;
+          els.helpPill.setAttribute("aria-expanded", "false");
+          els.helpPill.focus();
+        };
+
+        const showNext = readPref();
+        els.helpShowNext.checked = showNext;
+
+        els.helpShowNext.addEventListener("change", () => {
+          savePref(els.helpShowNext.checked);
+        });
+
+        els.helpPill.addEventListener("click", openHelp);
+        els.helpClose.addEventListener("click", closeHelp);
+        els.helpModal.addEventListener("click", (e) => {
+          if (e.target === els.helpModal) {
+            closeHelp();
+          }
+        });
+        document.addEventListener("keydown", (e) => {
+          if (e.key === "Escape" && !els.helpModal.hidden) {
+            closeHelp();
+          }
+        });
+
+        if (showNext) {
+          openHelp();
+        }
       }
 
       bindSearch("origin");
       bindSearch("destination");
 
-      [els.bedtimeInput, els.wakeInput, els.aggressivenessInput].forEach((el) => {
+      [
+        els.bedtimeInput,
+        els.wakeInput,
+        els.aggressivenessInput,
+        els.advancedModeInput,
+        els.departureTimeInput,
+        els.arrivalTimeInput
+      ].forEach((el) => {
         el.addEventListener("input", recalcAndRender);
         el.addEventListener("change", recalcAndRender);
       });
 
+      function initDayPickers() {
+        function setupPicker(minusEl, plusEl, labelEl, getOffset, setOffset) {
+          function refresh() {
+            const off = getOffset();
+            labelEl.textContent = dayLabelFromOffset(off);
+            minusEl.disabled = off <= -2;
+            plusEl.disabled = off >= 2;
+          }
+          minusEl.addEventListener("click", () => {
+            setOffset(getOffset() - 1);
+            refresh();
+            recalcAndRender();
+          });
+          plusEl.addEventListener("click", () => {
+            setOffset(getOffset() + 1);
+            refresh();
+            recalcAndRender();
+          });
+          refresh();
+        }
+
+        setupPicker(
+          els.departureDayMinus, els.departureDayPlus, els.departureDayLabel,
+          () => state.departureDayOffset,
+          (v) => { state.departureDayOffset = v; }
+        );
+        setupPicker(
+          els.arrivalDayMinus, els.arrivalDayPlus, els.arrivalDayLabel,
+          () => state.arrivalDayOffset,
+          (v) => { state.arrivalDayOffset = v; }
+        );
+      }
+
+      initDayPickers();
+      initHelpModal();
       recalcAndRender();
     </script>
   </body>
