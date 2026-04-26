@@ -926,7 +926,11 @@
           const range = Math.max(0.0001, max - min);
           return clamp((value - min) / range, 0, 1);
         }
-        function getT() { return getAggressivenessNormalized(); }
+        function getCurrentShiftRate() {
+          const sl = document.getElementById('aggressiveness-input');
+          const level = Number(sl && sl.value ? sl.value : 1);
+          return shiftRateForLevel(level);
+        }
         function isAlienModeEnabled() {
           const cb = document.getElementById('alien-mode-input');
           return Boolean(cb && cb.checked);
@@ -1132,67 +1136,68 @@
           [0.88, 'THUNDERSTORM'],
         ];
         let lastLabel = '';
-        function updateWeatherUI(t) {
+        function updateWeatherUI(weatherT, warpBlend) {
           const alienMode = isAlienModeEnabled();
           let label = 'CLEAR';
-          if (alienMode && t >= 0.82) {
+          if (alienMode && warpBlend > 0) {
             label = 'WARP DRIVE';
           } else {
-            for (const [thresh, lbl] of WEATHER_LABELS) { if (t >= thresh) label = lbl; }
+            for (const [thresh, lbl] of WEATHER_LABELS) { if (weatherT >= thresh) label = lbl; }
           }
           if (label !== lastLabel) {
             lastLabel = label;
             const badge = document.getElementById('weather-badge');
             if (badge) {
               badge.textContent = label;
-              badge.classList.toggle('stormy', t > 0.65);
+              badge.classList.toggle('stormy', weatherT > 0.65 || warpBlend > 0);
             }
           }
-          // Update slider track fill: teal (clear) → amber (cloudy/rain) → red (storm)
+          // Update slider track fill: teal (clear) → amber (cloudy/rain) → red (storm) → cyan (warp)
           const sl = document.getElementById('aggressiveness-input');
           if (sl) {
             const pct  = getAggressivenessNormalized() * 100;
-            const fill = alienMode && t >= 0.82
+            const fill = warpBlend > 0
               ? '#6FEAFF'
-              : (t < 0.38 ? '#00E5CC' : t < 0.68 ? '#FFB800' : '#FF5555');
+              : (weatherT < 0.38 ? '#00E5CC' : weatherT < 0.68 ? '#FFB800' : '#FF5555');
             sl.style.background = `linear-gradient(to right, ${fill} 0%, ${fill} ${pct}%, rgba(255,255,255,0.12) ${pct}%, rgba(255,255,255,0.12) 100%)`;
           }
         }
 
         // ── Animation loop ───────────────────────────────────────────────────────
         function animate() {
-          const t = getT();
+          const shiftRate = getCurrentShiftRate();
+          const weatherT = clamp((shiftRate - 0.5) / 2.0, 0, 1);
           const alienMode = isAlienModeEnabled();
-          const warpBlend = alienMode ? clamp((t - 0.62) / 0.38, 0, 1) : 0;
+          const warpBlend = alienMode ? clamp((shiftRate - 2.5) / 3.5, 0, 1) : 0;
           const weatherBlend = 1 - warpBlend;
 
           // Sky gradient
-          const tc = colorAt(SKY_TOP, t), bc = colorAt(SKY_BOTTOM, t);
+          const tc = colorAt(SKY_TOP, weatherT), bc = colorAt(SKY_BOTTOM, weatherT);
           const grd = ctx.createLinearGradient(0, 0, 0, H);
           grd.addColorStop(0, `rgb(${tc})`);
           grd.addColorStop(1, `rgb(${bc})`);
           ctx.fillStyle = grd;
           ctx.fillRect(0, 0, W, H);
 
-          drawSun(t);
+          drawSun(weatherT);
 
-          // Clouds: brightness lerps 248→68 (white to dark), coverage scales with t
-          const cbr  = lerp(248, 68, clamp(t * 1.5, 0, 1));
-          const cvis = clamp(t < 0.05 ? 0.15 : 0.15 + t * 1.5, 0.05, 1) * weatherBlend;
-          const windMult = 1 + t * 2;
+          // Clouds: brightness lerps 248→68 (white to dark), coverage scales with weatherT
+          const cbr  = lerp(248, 68, clamp(weatherT * 1.5, 0, 1));
+          const cvis = clamp(weatherT < 0.05 ? 0.15 : 0.15 + weatherT * 1.5, 0.05, 1) * weatherBlend;
+          const windMult = 1 + weatherT * 2;
           for (const c of clouds) {
             c.x -= c.speed * windMult;
             if (c.x < -350) { Object.assign(c, makeCloud(false)); }
             drawCloud(c.x, c.y, c.scale, cbr, c.alpha * cvis);
           }
 
-          // Rain: fades in at t > 0.44
-          const rainVis = clamp((t - 0.44) / 0.28, 0, 1) * weatherBlend;
+          // Rain: fades in at weatherT > 0.44
+          const rainVis = clamp((weatherT - 0.44) / 0.28, 0, 1) * weatherBlend;
           if (rainVis > 0) {
             const windX = -1.8 * rainVis;
             for (const d of drops) {
               d.x += windX;
-              d.y += d.speed * (0.5 + t * 1.2);
+              d.y += d.speed * (0.5 + weatherT * 1.2);
               if (d.y > H + 20 || d.x < -10) { d.x = Math.random() * W; d.y = -15; }
               ctx.strokeStyle = `rgba(174, 214, 241, ${d.alpha * rainVis})`;
               ctx.lineWidth = 1;
@@ -1203,11 +1208,11 @@
             }
           }
 
-          // Lightning: fires at t > 0.76, frequency doubles toward t=1
-          if (t > 0.76 && weatherBlend > 0.03) {
+          // Lightning: fires at weatherT > 0.76, frequency doubles toward weatherT=1
+          if (weatherT > 0.76 && weatherBlend > 0.03) {
             ltTimer--;
             if (ltTimer <= 0) {
-              const freq = lerp(550, 70, clamp((t - 0.76) / 0.24, 0, 1));
+              const freq = lerp(550, 70, clamp((weatherT - 0.76) / 0.24, 0, 1));
               ltTimer = Math.floor(freq + Math.random() * freq);
               newLightning();
             }
@@ -1218,10 +1223,10 @@
           }
 
           if (warpBlend > 0) {
-            drawWarpDrive(t, warpBlend);
+            drawWarpDrive(weatherT, warpBlend);
           }
 
-          updateWeatherUI(t);
+          updateWeatherUI(weatherT, warpBlend);
           requestAnimationFrame(animate);
         }
         animate();
