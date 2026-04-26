@@ -797,7 +797,7 @@
                 </div>
 
                 <p class="advanced-hint field-wide">
-                  Tip: include travel time to the departure airport and from arrival airport in these times.
+                  Tip: include travel time to the departure airport and from arrival airport in these times. The Arrival date and times should be destination time zone.
                 </p>
 
                 <div id="advanced-advice" class="advanced-advice field-wide" hidden></div>
@@ -1797,12 +1797,15 @@
           return;
         }
 
-        const depUtcMs = zonedLocalDateTimeToUtcMs(state.origin.tz, depParts);
-        const arrUtcMs = zonedLocalDateTimeToUtcMs(state.destination.tz, arrParts);
-        if (arrUtcMs <= depUtcMs) {
-          setAdvancedAdvice("Arrival time must be after departure time.", true);
+        const depTotalMins = state.departureDayOffset * 1440 + depParts.hour * 60 + depParts.minute;
+        const arrTotalMins = state.arrivalDayOffset * 1440 + arrParts.hour * 60 + arrParts.minute;
+        if (arrTotalMins <= depTotalMins) {
+          setAdvancedAdvice("Adjust day or time \u2014 arrival must come after departure.", true);
           return;
         }
+
+        const depUtcMs = zonedLocalDateTimeToUtcMs(state.origin.tz, depParts);
+        const arrUtcMs = zonedLocalDateTimeToUtcMs(state.destination.tz, arrParts);
 
         const bedtimeMins = toMinutes(els.bedtimeInput.value);
         const wakeMins = toMinutes(els.wakeInput.value);
@@ -1869,7 +1872,8 @@
         const hoursUntilNextBed = Math.max(0, (nextBedUtcMs - arrUtcMs) / 3600000);
         afterLandingSleepHours = Math.min(afterLandingSleepHours, hoursUntilNextBed);
 
-        const message = `Sleep during travel: ${planeSleepHours.toFixed(1)}h · After landing: ${afterLandingSleepHours.toFixed(1)}h`;
+        const flightHours = (arrTotalMins - depTotalMins) / 60;
+        const message = `Flight time: ${flightHours.toFixed(1)}h · Sleep during travel: ${planeSleepHours.toFixed(1)}h · After landing: ${afterLandingSleepHours.toFixed(1)}h`;
         setAdvancedAdvice(message, false);
       }
 
