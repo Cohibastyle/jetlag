@@ -85,8 +85,8 @@
         border: 1px solid var(--panel-border);
         border-radius: var(--panel-radius);
         box-shadow: var(--shadow), var(--glow);
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
         overflow: hidden;
       }
       .panel::after {
@@ -98,7 +98,7 @@
         background: repeating-linear-gradient(
           0deg,
           transparent 0px, transparent 2px,
-          rgba(0, 0, 0, 0.07) 2px, rgba(0, 0, 0, 0.07) 3px
+          rgba(0, 0, 0, 0.03) 2px, rgba(0, 0, 0, 0.03) 3px
         );
         border-radius: inherit;
       }
@@ -214,7 +214,7 @@
       /* ── Controls panel ── */
       .panel-controls {
         padding: 16px 18px;
-        background: rgba(6, 12, 26, 0.30);
+        background: rgba(6, 12, 26, 0.16);
       }
       .controls-grid {
         display: grid;
@@ -511,7 +511,7 @@
       /* ── Summary panel ── */
       .panel-summary {
         padding: 16px 18px;
-        background: rgba(6, 12, 26, 0.30);
+        background: rgba(6, 12, 26, 0.16);
       }
       .summary-grid {
         display: grid;
@@ -543,7 +543,7 @@
       /* ── Table panel ── */
       .panel-table {
         padding: 16px 18px;
-        background: rgba(6, 12, 26, 0.30);
+        background: rgba(6, 12, 26, 0.16);
       }
       .empty-state {
         padding: 18px;
@@ -797,7 +797,7 @@
           <div class="advanced-section">
             <label class="advanced-toggle" for="advanced-mode-input">
               <input id="advanced-mode-input" type="checkbox" />
-              Advanced Mode
+              Travel day sleep planner
             </label>
 
             <div id="advanced-fields" class="advanced-fields" hidden>
