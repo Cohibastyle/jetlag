@@ -406,6 +406,23 @@
         border-color: rgba(255, 85, 85, 0.34);
         background: rgba(255, 85, 85, 0.08);
       }
+      .advanced-advice-title {
+        margin: 0;
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 0.74rem;
+        color: var(--teal);
+      }
+      .advanced-advice .table-wrap {
+        margin-top: 8px;
+      }
+      .advanced-advice table th,
+      .advanced-advice table td {
+        padding: 7px 6px;
+      }
+      .advanced-advice table td:last-child {
+        color: var(--teal);
+        font-size: 0.84rem;
+      }
       .slider-row {
         display: flex;
         align-items: center;
@@ -1771,12 +1788,12 @@
       function setAdvancedAdvice(message, isWarning) {
         if (!message) {
           els.advancedAdvice.hidden = true;
-          els.advancedAdvice.textContent = "";
+          els.advancedAdvice.innerHTML = "";
           els.advancedAdvice.classList.remove("warning");
           return;
         }
         els.advancedAdvice.hidden = false;
-        els.advancedAdvice.textContent = message;
+        els.advancedAdvice.innerHTML = message;
         els.advancedAdvice.classList.toggle("warning", Boolean(isWarning));
       }
 
@@ -1816,42 +1833,21 @@
 
         const normalSleepHours = sleepDurationHours(bedtimeMins, wakeMins);
         const travelHours = Math.max(0, (arrUtcMs - depUtcMs) / 3600000);
-
-        const depLocalInOrigin = getDateTimePartsInZone(state.origin.tz, new Date(depUtcMs));
-        const bedHour = Math.floor(bedtimeMins / 60);
-        const bedMinute = bedtimeMins % 60;
-
-        const depDayBedStartUtcMs = zonedLocalDateTimeToUtcMs(state.origin.tz, {
-          year: depLocalInOrigin.year,
-          month: depLocalInOrigin.month,
-          day: depLocalInOrigin.day,
-          hour: bedHour,
-          minute: bedMinute,
-          second: 0
+        const scenarios = [0.75, 0.5, 0.25].map((pct) => {
+          const sleepDuring = travelHours * pct;
+          const sleepAfter = Math.max(0, normalSleepHours - sleepDuring);
+          return {
+            label: `${Math.round(pct * 100)}%`,
+            during: sleepDuring,
+            after: sleepAfter
+          };
         });
-        const sleepWindowMs = normalSleepHours * 3600000;
-        const prevDayBedStartUtcMs = depDayBedStartUtcMs - 86400000;
 
-        let targetSleepStartUtcMs;
-        if (depUtcMs < depDayBedStartUtcMs) {
-          targetSleepStartUtcMs = depUtcMs < (prevDayBedStartUtcMs + sleepWindowMs)
-            ? prevDayBedStartUtcMs
-            : depDayBedStartUtcMs;
-        } else {
-          targetSleepStartUtcMs = depUtcMs < (depDayBedStartUtcMs + sleepWindowMs)
-            ? depDayBedStartUtcMs
-            : depDayBedStartUtcMs + 86400000;
-        }
+        const rowsHtml = scenarios.map((row) => (
+          `<tr><td>${row.label}</td><td>${row.during.toFixed(1)}h</td><td>${row.after.toFixed(1)}h</td></tr>`
+        )).join("");
 
-        const targetSleepEndUtcMs = targetSleepStartUtcMs + sleepWindowMs;
-        const planeSleepHours = Math.max(0, Math.min(
-          overlapHours(depUtcMs, arrUtcMs, targetSleepStartUtcMs, targetSleepEndUtcMs),
-          travelHours
-        ));
-        const afterLandingSleepHours = Math.max(0, normalSleepHours - planeSleepHours);
-
-        const flightHours = travelHours;
-        const message = `Travel time: ${flightHours.toFixed(1)}h · Sleep during travel: ${planeSleepHours.toFixed(1)}h · After landing: ${afterLandingSleepHours.toFixed(1)}h`;
+        const message = `<p class="advanced-advice-title">Travel time: ${travelHours.toFixed(1)}h</p><div class="table-wrap"><table><thead><tr><th>% Sleep</th><th>Sleep During Travel</th><th>Sleep After Travel</th></tr></thead><tbody>${rowsHtml}</tbody></table></div>`;
         setAdvancedAdvice(message, false);
       }
 
