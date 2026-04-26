@@ -310,6 +310,7 @@
         margin-top: 14px;
         padding-top: 14px;
       }
+      [hidden] { display: none !important; }
       .advanced-section {
         margin-top: 12px;
       }
@@ -329,53 +330,53 @@
       .advanced-fields {
         margin-top: 10px;
       }
-      .datetime-row {
-        display: flex;
-        gap: 8px;
-        align-items: center;
-      }
       .day-picker {
         display: flex;
         align-items: center;
-        gap: 6px;
-        flex: 1;
+        width: 100%;
         background: rgba(255, 184, 0, 0.06);
         border: 1px solid rgba(255, 184, 0, 0.22);
         border-radius: 8px;
-        padding: 7px 10px;
-        min-width: 0;
+        padding: 0 6px;
+        height: 40px;
+        box-sizing: border-box;
+        transition: border-color 0.2s, box-shadow 0.2s;
+      }
+      .day-picker:focus-within {
+        border-color: var(--amber);
+        box-shadow: 0 0 0 2px rgba(255, 184, 0, 0.18);
       }
       .day-label {
         flex: 1;
         text-align: center;
-        font-family: "IBM Plex Mono", monospace;
-        font-size: 0.82rem;
+        font-family: inherit;
+        font-size: 0.88rem;
         color: var(--text);
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
+        pointer-events: none;
       }
       .day-btn {
         appearance: none;
         -webkit-appearance: none;
         background: none;
-        border: 1px solid rgba(255, 184, 0, 0.35);
-        border-radius: 4px;
+        border: none;
         color: var(--amber);
         font-size: 1.1rem;
         line-height: 1;
-        width: 26px;
-        height: 26px;
+        width: 28px;
+        height: 28px;
         cursor: pointer;
         flex-shrink: 0;
         display: flex;
         align-items: center;
         justify-content: center;
-        transition: background 0.15s, box-shadow 0.15s;
+        border-radius: 4px;
+        transition: background 0.15s;
       }
       .day-btn:hover, .day-btn:focus-visible {
         background: rgba(255, 184, 0, 0.15);
-        box-shadow: 0 0 0 2px rgba(255, 184, 0, 0.2);
         outline: none;
       }
       .day-btn:disabled {
@@ -765,36 +766,42 @@
               Advanced Mode
             </label>
 
-            <div id="advanced-fields" class="advanced-fields controls-grid" hidden>
-              <div class="field field-wide">
-                <label>Departure (Origin Local Time)</label>
-                <div class="datetime-row">
+            <div id="advanced-fields" class="advanced-fields" hidden>
+              <div class="controls-grid">
+                <div class="field">
+                  <label>Departure Day</label>
                   <div class="day-picker">
                     <button type="button" class="day-btn" id="dep-day-minus" aria-label="Earlier day">−</button>
                     <span id="dep-day-label" class="day-label">Today</span>
                     <button type="button" class="day-btn" id="dep-day-plus" aria-label="Later day">+</button>
                   </div>
-                  <input id="departure-time-input" type="time" value="12:00" />
                 </div>
-              </div>
 
-              <div class="field field-wide">
-                <label>Arrival (Destination Local Time)</label>
-                <div class="datetime-row">
+                <div class="field">
+                  <label>Arrival Day</label>
                   <div class="day-picker">
                     <button type="button" class="day-btn" id="arr-day-minus" aria-label="Earlier day">−</button>
                     <span id="arr-day-label" class="day-label">Today</span>
                     <button type="button" class="day-btn" id="arr-day-plus" aria-label="Later day">+</button>
                   </div>
+                </div>
+
+                <div class="field">
+                  <label for="departure-time-input">Departure Time</label>
+                  <input id="departure-time-input" type="time" value="12:00" />
+                </div>
+
+                <div class="field">
+                  <label for="arrival-time-input">Arrival Time</label>
                   <input id="arrival-time-input" type="time" value="12:00" />
                 </div>
+
+                <p class="advanced-hint field-wide">
+                  Tip: include travel time to the departure airport and from arrival airport in these times.
+                </p>
+
+                <div id="advanced-advice" class="advanced-advice field-wide" hidden></div>
               </div>
-
-              <p class="advanced-hint field-wide">
-                Tip: include travel time to the departure airport and from arrival airport in these times.
-              </p>
-
-              <div id="advanced-advice" class="advanced-advice field-wide" hidden></div>
             </div>
           </div>
 
