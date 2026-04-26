@@ -1818,87 +1818,39 @@
         const travelHours = Math.max(0, (arrUtcMs - depUtcMs) / 3600000);
 
         const depLocalInOrigin = getDateTimePartsInZone(state.origin.tz, new Date(depUtcMs));
-        const arrLocalInOrigin = getDateTimePartsInZone(state.origin.tz, new Date(arrUtcMs));
-        const depLocalInDest = getDateTimePartsInZone(state.destination.tz, new Date(depUtcMs));
-        const arrLocalInDest = getDateTimePartsInZone(state.destination.tz, new Date(arrUtcMs));
         const bedHour = Math.floor(bedtimeMins / 60);
         const bedMinute = bedtimeMins % 60;
 
-        const inFlightStartDate = addDaysToYmd(depLocalInOrigin.year, depLocalInOrigin.month, depLocalInOrigin.day, -1);
-        const inFlightEndDate = addDaysToYmd(arrLocalInOrigin.year, arrLocalInOrigin.month, arrLocalInOrigin.day, 1);
-        const inFlightStartRef = Date.UTC(inFlightStartDate.year, inFlightStartDate.month - 1, inFlightStartDate.day);
-        const inFlightEndRef = Date.UTC(inFlightEndDate.year, inFlightEndDate.month - 1, inFlightEndDate.day);
-        const inFlightDaysSpan = Math.max(0, Math.round((inFlightEndRef - inFlightStartRef) / 86400000));
-
-        let planeSleepHours = 0;
-        for (let i = 0; i <= inFlightDaysSpan; i++) {
-          const d = new Date(inFlightStartRef + i * 86400000);
-          const y = d.getUTCFullYear();
-          const m = d.getUTCMonth() + 1;
-          const day = d.getUTCDate();
-          const sleepStart = zonedLocalDateTimeToUtcMs(state.origin.tz, {
-            year: y,
-            month: m,
-            day,
-            hour: bedHour,
-            minute: bedMinute,
-            second: 0
-          });
-          const sleepEnd = sleepStart + normalSleepHours * 3600000;
-          planeSleepHours += overlapHours(depUtcMs, arrUtcMs, sleepStart, sleepEnd);
-        }
-        planeSleepHours = Math.min(planeSleepHours, travelHours);
-
-        const startDate = addDaysToYmd(depLocalInDest.year, depLocalInDest.month, depLocalInDest.day, -1);
-        const endDate = addDaysToYmd(arrLocalInDest.year, arrLocalInDest.month, arrLocalInDest.day, 1);
-        const startRef = Date.UTC(startDate.year, startDate.month - 1, startDate.day);
-        const endRef = Date.UTC(endDate.year, endDate.month - 1, endDate.day);
-        const daysSpan = Math.max(0, Math.round((endRef - startRef) / 86400000));
-
-        let lostSleepHours = 0;
-        for (let i = 0; i <= daysSpan; i++) {
-          const d = new Date(startRef + i * 86400000);
-          const y = d.getUTCFullYear();
-          const m = d.getUTCMonth() + 1;
-          const day = d.getUTCDate();
-          const sleepStart = zonedLocalDateTimeToUtcMs(state.destination.tz, {
-            year: y,
-            month: m,
-            day,
-            hour: bedHour,
-            minute: bedMinute,
-            second: 0
-          });
-          const sleepEnd = sleepStart + normalSleepHours * 3600000;
-          lostSleepHours += overlapHours(depUtcMs, arrUtcMs, sleepStart, sleepEnd);
-        }
-
-        let afterLandingSleepHours = Math.max(0, lostSleepHours - planeSleepHours);
-
-        const bedTodayAtArrival = zonedLocalDateTimeToUtcMs(state.destination.tz, {
-          year: arrLocalInDest.year,
-          month: arrLocalInDest.month,
-          day: arrLocalInDest.day,
+        const depDayBedStartUtcMs = zonedLocalDateTimeToUtcMs(state.origin.tz, {
+          year: depLocalInOrigin.year,
+          month: depLocalInOrigin.month,
+          day: depLocalInOrigin.day,
           hour: bedHour,
           minute: bedMinute,
           second: 0
         });
-        const nextBedDate = bedTodayAtArrival > arrUtcMs
-          ? { year: arrLocalInDest.year, month: arrLocalInDest.month, day: arrLocalInDest.day }
-          : addDaysToYmd(arrLocalInDest.year, arrLocalInDest.month, arrLocalInDest.day, 1);
-        const nextBedUtcMs = zonedLocalDateTimeToUtcMs(state.destination.tz, {
-          year: nextBedDate.year,
-          month: nextBedDate.month,
-          day: nextBedDate.day,
-          hour: bedHour,
-          minute: bedMinute,
-          second: 0
-        });
+        const sleepWindowMs = normalSleepHours * 3600000;
+        const prevDayBedStartUtcMs = depDayBedStartUtcMs - 86400000;
 
-        const hoursUntilNextBed = Math.max(0, (nextBedUtcMs - arrUtcMs) / 3600000);
-        afterLandingSleepHours = Math.min(afterLandingSleepHours, hoursUntilNextBed);
+        let targetSleepStartUtcMs;
+        if (depUtcMs < depDayBedStartUtcMs) {
+          targetSleepStartUtcMs = depUtcMs < (prevDayBedStartUtcMs + sleepWindowMs)
+            ? prevDayBedStartUtcMs
+            : depDayBedStartUtcMs;
+        } else {
+          targetSleepStartUtcMs = depUtcMs < (depDayBedStartUtcMs + sleepWindowMs)
+            ? depDayBedStartUtcMs
+            : depDayBedStartUtcMs + 86400000;
+        }
 
-        const flightHours = (arrTotalMins - depTotalMins) / 60;
+        const targetSleepEndUtcMs = targetSleepStartUtcMs + sleepWindowMs;
+        const planeSleepHours = Math.max(0, Math.min(
+          overlapHours(depUtcMs, arrUtcMs, targetSleepStartUtcMs, targetSleepEndUtcMs),
+          travelHours
+        ));
+        const afterLandingSleepHours = Math.max(0, normalSleepHours - planeSleepHours);
+
+        const flightHours = travelHours;
         const message = `Travel time: ${flightHours.toFixed(1)}h · Sleep during travel: ${planeSleepHours.toFixed(1)}h · After landing: ${afterLandingSleepHours.toFixed(1)}h`;
         setAdvancedAdvice(message, false);
       }
