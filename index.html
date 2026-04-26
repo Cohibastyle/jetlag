@@ -842,7 +842,7 @@
           <div class="slider-section">
             <div class="panel-label">Recovery Profile</div>
             <div class="slider-row">
-              <span class="slider-lbl">Gentle</span>
+              <span class="slider-lbl" id="slider-min-label">Gentle</span>
               <input id="aggressiveness-input" type="range" min="1" max="5" step="0.04" value="3" />
               <span class="slider-lbl" id="slider-max-label">Aggressive</span>
             </div>
@@ -1539,7 +1539,7 @@
         if (level <= 5) {
           return 0.5 + (level - 1) * 0.5;
         }
-        return 6.0;
+        return 2.5 + (level - 5) * 3.5;
       }
 
       function levelName(v) {
@@ -1568,6 +1568,7 @@
         aggressivenessInput: document.getElementById("aggressiveness-input"),
         aggressivenessLabel: document.getElementById("aggressiveness-label"),
         alienModeInput: document.getElementById("alien-mode-input"),
+        sliderMinLabel: document.getElementById("slider-min-label"),
         sliderMaxLabel: document.getElementById("slider-max-label"),
         error: document.getElementById("error"),
         rawOffset: document.getElementById("raw-offset"),
@@ -1975,6 +1976,7 @@
       function recalcAndRender() {
         els.advancedFields.hidden = !els.advancedModeInput.checked;
         els.aggressivenessInput.max = els.alienModeInput.checked ? "6" : "5";
+        els.sliderMinLabel.textContent = els.alienModeInput.checked ? "Human" : "Gentle";
         els.sliderMaxLabel.textContent = els.alienModeInput.checked ? "Alien" : "Aggressive";
         if (!els.alienModeInput.checked && Number(els.aggressivenessInput.value) > 5) {
           els.aggressivenessInput.value = "5";
