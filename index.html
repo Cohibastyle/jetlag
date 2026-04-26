@@ -1815,7 +1815,7 @@
         }
 
         const normalSleepHours = sleepDurationHours(bedtimeMins, wakeMins);
-        const travelHours = (arrUtcMs - depUtcMs) / 3600000;
+        const travelHours = Math.max(0, (arrUtcMs - depUtcMs) / 3600000);
 
         const depLocalInDest = getDateTimePartsInZone(state.destination.tz, new Date(depUtcMs));
         const arrLocalInDest = getDateTimePartsInZone(state.destination.tz, new Date(arrUtcMs));
@@ -1846,7 +1846,7 @@
           lostSleepHours += overlapHours(depUtcMs, arrUtcMs, sleepStart, sleepEnd);
         }
 
-        const planeSleepHours = Math.min(lostSleepHours, travelHours * 0.6);
+        const planeSleepHours = Math.max(0, Math.min(lostSleepHours, travelHours * 0.6));
         let afterLandingSleepHours = Math.max(0, lostSleepHours - planeSleepHours);
 
         const bedTodayAtArrival = zonedLocalDateTimeToUtcMs(state.destination.tz, {
@@ -1873,7 +1873,7 @@
         afterLandingSleepHours = Math.min(afterLandingSleepHours, hoursUntilNextBed);
 
         const flightHours = (arrTotalMins - depTotalMins) / 60;
-        const message = `Flight time: ${flightHours.toFixed(1)}h · Sleep during travel: ${planeSleepHours.toFixed(1)}h · After landing: ${afterLandingSleepHours.toFixed(1)}h`;
+        const message = `Travel time: ${flightHours.toFixed(1)}h · Sleep during travel: ${planeSleepHours.toFixed(1)}h · After landing: ${afterLandingSleepHours.toFixed(1)}h`;
         setAdvancedAdvice(message, false);
       }
 
