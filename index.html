@@ -1817,10 +1817,37 @@
         const normalSleepHours = sleepDurationHours(bedtimeMins, wakeMins);
         const travelHours = Math.max(0, (arrUtcMs - depUtcMs) / 3600000);
 
+        const depLocalInOrigin = getDateTimePartsInZone(state.origin.tz, new Date(depUtcMs));
+        const arrLocalInOrigin = getDateTimePartsInZone(state.origin.tz, new Date(arrUtcMs));
         const depLocalInDest = getDateTimePartsInZone(state.destination.tz, new Date(depUtcMs));
         const arrLocalInDest = getDateTimePartsInZone(state.destination.tz, new Date(arrUtcMs));
         const bedHour = Math.floor(bedtimeMins / 60);
         const bedMinute = bedtimeMins % 60;
+
+        const inFlightStartDate = addDaysToYmd(depLocalInOrigin.year, depLocalInOrigin.month, depLocalInOrigin.day, -1);
+        const inFlightEndDate = addDaysToYmd(arrLocalInOrigin.year, arrLocalInOrigin.month, arrLocalInOrigin.day, 1);
+        const inFlightStartRef = Date.UTC(inFlightStartDate.year, inFlightStartDate.month - 1, inFlightStartDate.day);
+        const inFlightEndRef = Date.UTC(inFlightEndDate.year, inFlightEndDate.month - 1, inFlightEndDate.day);
+        const inFlightDaysSpan = Math.max(0, Math.round((inFlightEndRef - inFlightStartRef) / 86400000));
+
+        let planeSleepHours = 0;
+        for (let i = 0; i <= inFlightDaysSpan; i++) {
+          const d = new Date(inFlightStartRef + i * 86400000);
+          const y = d.getUTCFullYear();
+          const m = d.getUTCMonth() + 1;
+          const day = d.getUTCDate();
+          const sleepStart = zonedLocalDateTimeToUtcMs(state.origin.tz, {
+            year: y,
+            month: m,
+            day,
+            hour: bedHour,
+            minute: bedMinute,
+            second: 0
+          });
+          const sleepEnd = sleepStart + normalSleepHours * 3600000;
+          planeSleepHours += overlapHours(depUtcMs, arrUtcMs, sleepStart, sleepEnd);
+        }
+        planeSleepHours = Math.min(planeSleepHours, travelHours);
 
         const startDate = addDaysToYmd(depLocalInDest.year, depLocalInDest.month, depLocalInDest.day, -1);
         const endDate = addDaysToYmd(arrLocalInDest.year, arrLocalInDest.month, arrLocalInDest.day, 1);
@@ -1846,7 +1873,6 @@
           lostSleepHours += overlapHours(depUtcMs, arrUtcMs, sleepStart, sleepEnd);
         }
 
-        const planeSleepHours = Math.max(0, Math.min(lostSleepHours, travelHours * 0.6));
         let afterLandingSleepHours = Math.max(0, lostSleepHours - planeSleepHours);
 
         const bedTodayAtArrival = zonedLocalDateTimeToUtcMs(state.destination.tz, {
