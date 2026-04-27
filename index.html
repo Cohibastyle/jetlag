@@ -4,6 +4,8 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Jet Lag Recovery System</title>
+    <link rel="manifest" href="/Jetlag/manifest.webmanifest" />
+    <meta name="theme-color" content="#FFB800" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -18,7 +20,7 @@
         --teal:         #00E5CC;
         --teal-dim:     rgba(0, 229, 204, 0.3);
         --text:         #EAE0CC;
-        --text-muted:   rgba(234, 224, 204, 0.55);
+        --text-muted:   rgba(255, 248, 235, 0.82);
         --danger:       #FF5555;
         --panel-bg:     rgba(6, 12, 26, 0.87);
         --panel-border: rgba(255, 184, 0, 0.28);
@@ -258,6 +260,10 @@
         border-color: var(--amber);
         box-shadow: 0 0 0 2px rgba(255, 184, 0, 0.18);
       }
+      input[type="text"]::placeholder {
+        font-style: italic;
+        color: rgba(255, 248, 235, 0.55);
+      }
       input[type="time"]::-webkit-calendar-picker-indicator {
         filter: invert(1) sepia(1) saturate(4) hue-rotate(0deg);
         opacity: 0.45;
@@ -451,10 +457,26 @@
         white-space: nowrap;
         flex-shrink: 0;
       }
+      .slider-input-wrap {
+        flex: 4;
+      }
+      .slider-input-wrap > input[type="range"] {
+        width: 100%;
+      }
+      .slider-spacer {
+        flex: 1;
+        transition: flex 0.3s ease;
+      }
+      @keyframes alienFlash {
+        0%, 100% { opacity: 1; color: var(--amber-bright); }
+        50% { opacity: 0.25; color: #fff; }
+      }
+      .recovery-toggle.flashing {
+        animation: alienFlash 0.9s ease-in-out infinite;
+      }
       input[type="range"] {
         appearance: none;
         -webkit-appearance: none;
-        flex: 1;
         height: 4px;
         border-radius: 2px;
         background: linear-gradient(to right, var(--teal) 50%, rgba(255,255,255,0.12) 50%);
@@ -557,6 +579,13 @@
         line-height: 1.6;
       }
       .table-wrap { overflow-x: auto; }
+      .shift-note-header {
+        font-family: "IBM Plex Mono", monospace;
+        font-size: 0.78rem;
+        color: var(--teal);
+        letter-spacing: 0.04em;
+        margin: 0 0 10px;
+      }
       table { width: 100%; border-collapse: collapse; }
       th, td {
         border-bottom: 1px solid rgba(255, 184, 0, 0.1);
@@ -582,21 +611,23 @@
         from { opacity: 0; transform: translateY(2px); }
         to   { opacity: 1; transform: translateY(0);   }
       }
-      .footer-note {
-        margin-top: 12px;
+      .page-footer {
+        text-align: center;
+        padding: 18px 0 14px;
         color: var(--text-muted);
         font-family: "IBM Plex Mono", monospace;
         font-size: 0.67rem;
         letter-spacing: 0.06em;
-        text-align: center;
+        position: relative;
+        z-index: 10;
       }
-      .footer-note a {
+      .page-footer a {
         color: var(--teal);
         text-decoration: none;
         border-bottom: 1px solid rgba(0, 229, 204, 0.35);
       }
-      .footer-note a:hover,
-      .footer-note a:focus-visible {
+      .page-footer a:hover,
+      .page-footer a:focus-visible {
         color: #6ff6e7;
         border-bottom-color: var(--teal);
       }
@@ -725,7 +756,7 @@
       <header class="panel panel-header">
         <div class="header-icon">&#9992;</div>
         <div class="header-text">
-          <h1>Jet Lag Recovery System</h1>
+          <h1>Jet Lag Recovery Computer</h1>
           <p class="subtitle">JL&#8209;01 &middot; Route Adaptation Timeline Generator</p>
         </div>
         <button id="help-pill" class="help-pill" type="button" aria-haspopup="dialog" aria-controls="help-modal">Help</button>
@@ -742,11 +773,9 @@
               <li>Move the recovery slider from Gentle to Aggressive.</li>
               <li>Follow the destination-time sleep plan shown in the table.</li>
             </ol>
-            <p>Optional: turn on Advanced Mode to add your departure day/time and arrival day/time.</p>
-            <p>Advanced Mode helps you plan sleep after landing based on how much you can actually sleep on the plane. Since everyone sleeps differently in flight, the table shows simple scenarios (75%, 50%, and 25% of travel time asleep). For each scenario, you can quickly see how much sleep you still need after you land.</p>
-            <p>Use the scenario that best matches your in-flight sleep habits to choose a realistic recovery target for your first day at destination.</p>
-            <p>This tool accounts for daylight saving time at both origin and destination when calculating the time-zone difference for today.</p>
-            <p>The entire sleep schedule is shown in destination local time.</p>
+            <p>Turn on Advanced Mode to help you plan sleep after landing based on how much you can actually sleep on the plane. Since everyone sleeps differently in flight, the table shows simple scenarios (75%, 50%, and 25% of travel time asleep). For each scenario, you can quickly see how much sleep you still need after you land.</p>
+            <li></li><p>Use the scenario that best matches your in-flight sleep habits to choose a realistic recovery target for your first day at destination.</p>
+            <li></li><p>This tool accounts for daylight saving time at both origin and destination when calculating the time-zone difference for today.</p>
           </div>
           <div class="help-actions">
             <label class="help-checkbox" for="help-show-next">
@@ -768,7 +797,7 @@
 
             <div class="field field-wide">
               <label for="origin-input">Origin</label>
-              <input id="origin-input" type="text" autocomplete="off" placeholder="City or airport code"
+              <input id="origin-input" type="text" autocomplete="off" placeholder="City, airport code or country"
                      role="combobox" aria-expanded="false" aria-controls="origin-list" />
               <div id="origin-list" class="suggestions" role="listbox" hidden></div>
               <div id="origin-chip" class="selected-chip" hidden></div>
@@ -776,7 +805,7 @@
 
             <div class="field field-wide">
               <label for="destination-input">Destination</label>
-              <input id="destination-input" type="text" autocomplete="off" placeholder="City or airport code"
+              <input id="destination-input" type="text" autocomplete="off" placeholder="City, airport code or country"
                      role="combobox" aria-expanded="false" aria-controls="destination-list" />
               <div id="destination-list" class="suggestions" role="listbox" hidden></div>
               <div id="destination-chip" class="selected-chip" hidden></div>
@@ -842,9 +871,12 @@
           <div class="slider-section">
             <div class="panel-label">Recovery Profile</div>
             <div class="slider-row">
-              <span class="slider-lbl" id="slider-min-label">Gentle</span>
-              <input id="aggressiveness-input" type="range" min="1" max="5" step="0.04" value="3" />
-              <span class="slider-lbl" id="slider-max-label">Aggressive</span>
+              <span class="slider-lbl" id="slider-min-label">GENTLE</span>
+              <div class="slider-input-wrap">
+                <input id="aggressiveness-input" type="range" min="1" max="5" step="0.04" value="3" />
+              </div>
+              <div id="slider-spacer" class="slider-spacer"></div>
+              <span class="slider-lbl" id="slider-max-label">AGGRESSIVE</span>
             </div>
             <div class="aggressiveness-display" id="aggressiveness-label"></div>
             <label class="recovery-toggle" for="alien-mode-input">
@@ -887,23 +919,24 @@
         <div id="empty" class="empty-state">
           Select valid origin and destination plus sleep / wake times to generate your timeline.
         </div>
-        <div class="table-wrap" id="table-wrap" hidden>
+        <div id="table-wrap" class="table-wrap" hidden>
+          <p id="shift-note-header" class="shift-note-header"></p>
           <table>
             <thead>
               <tr>
                 <th>Day</th>
                 <th>Bedtime</th>
                 <th>Wake Time</th>
-                <th>Shift Note</th>
               </tr>
             </thead>
             <tbody id="schedule-body"></tbody>
           </table>
         </div>
-        <p class="footer-note">Created by Yen Choi &middot; <a href="https://linkedin.com/in/yenchoi" target="_blank" rel="noopener noreferrer">linkedin.com/in/yenchoi</a></p>
       </section>
 
     </main>
+
+    <footer class="page-footer">Created by <a href="https://linkedin.com/in/yenchoi" target="_blank" rel="noopener noreferrer">Yen Choi</a></footer>
 
     <script>
       // ── Weather Sky Animation ────────────────────────────────────────────────
@@ -1657,6 +1690,8 @@
         alienModeInput: document.getElementById("alien-mode-input"),
         sliderMinLabel: document.getElementById("slider-min-label"),
         sliderMaxLabel: document.getElementById("slider-max-label"),
+        sliderSpacer: document.getElementById("slider-spacer"),
+        alienToggleLabel: document.querySelector(".recovery-toggle"),
         error: document.getElementById("error"),
         rawOffset: document.getElementById("raw-offset"),
         effectiveOffset: document.getElementById("effective-offset"),
@@ -1664,6 +1699,7 @@
         destinationZone: document.getElementById("destination-zone"),
         empty: document.getElementById("empty"),
         tableWrap: document.getElementById("table-wrap"),
+        shiftNoteHeader: document.getElementById("shift-note-header"),
         scheduleBody: document.getElementById("schedule-body"),
         advancedModeInput: document.getElementById("advanced-mode-input"),
         advancedFields: document.getElementById("advanced-fields"),
@@ -2062,10 +2098,14 @@
 
       function recalcAndRender() {
         els.advancedFields.hidden = !els.advancedModeInput.checked;
-        els.aggressivenessInput.max = els.alienModeInput.checked ? "6" : "5";
-        els.sliderMinLabel.textContent = els.alienModeInput.checked ? "Human" : "Gentle";
-        els.sliderMaxLabel.textContent = els.alienModeInput.checked ? "Alien" : "Aggressive";
-        if (!els.alienModeInput.checked && Number(els.aggressivenessInput.value) > 5) {
+        const alienOn = els.alienModeInput.checked;
+        els.aggressivenessInput.max = alienOn ? "6" : "5";
+        els.sliderSpacer.style.display = alienOn ? "none" : "";
+        els.sliderMinLabel.textContent = alienOn ? "HUMAN" : "GENTLE";
+        els.sliderMaxLabel.textContent = alienOn ? "ALIEN" : "AGGRESSIVE";
+        const atMax = !alienOn && Number(els.aggressivenessInput.value) >= 5;
+        els.alienToggleLabel.classList.toggle("flashing", atMax);
+        if (!alienOn && Number(els.aggressivenessInput.value) > 5) {
           els.aggressivenessInput.value = "5";
         }
         els.aggressivenessLabel.textContent = aggressivenessLabel(Number(els.aggressivenessInput.value));
@@ -2114,22 +2154,21 @@
         const arrivalWake = wake + effectiveOffset * 60;
 
         let rows = "";
+        const headerNote = days === 0
+          ? "No shift needed"
+          : `Shift sleep ${shiftPerDay.toFixed(1)}h ${dirWord} each day`;
+        els.shiftNoteHeader.textContent = headerNote;
         for (let day = 1; day <= rowCount; day++) {
           // Each day we recover shiftRate hours back toward the target (normal bedtime in dest tz).
           const cumulative = days === 0 ? 0 : Math.sign(effectiveOffset) * Math.min(Math.abs(effectiveOffset), shiftRate * day);
           const bedLocal = arrivalBed - cumulative * 60;
           const wakeLocal = arrivalWake - cumulative * 60;
-          const noteHours = days === 0 ? 0 : Math.min(shiftPerDay, Math.abs(effectiveOffset - (shiftRate * (day - 1))));
-          const note = days === 0
-            ? "No shift needed"
-            : `Shift sleep ${noteHours.toFixed(1)}h ${dirWord}`;
 
           rows += `
             <tr>
               <td class="mono">Day ${day}</td>
               <td class="mono">${minutesToClock(bedLocal)}</td>
               <td class="mono">${minutesToClock(wakeLocal)}</td>
-              <td>${note}</td>
             </tr>
           `;
         }
@@ -2246,9 +2285,10 @@
       initDayPickers();
       initHelpModal();
       recalcAndRender();
-    </script>
-  </body>
-</html>
 
+      if ("serviceWorker" in navigator) {
+        navigator.serviceWorker.register("/Jetlag/sw.js");
+      }
+    </script>
   </body>
 </html>

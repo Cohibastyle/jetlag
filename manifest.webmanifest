@@ -1,0 +1,18 @@
+{
+  "name": "Jet Lag Recovery System",
+  "short_name": "JetLag",
+  "description": "Jet lag recovery sleep planning with weather and warp visuals.",
+  "start_url": "/Jetlag/",
+  "scope": "/Jetlag/",
+  "display": "standalone",
+  "theme_color": "#FFB800",
+  "background_color": "#050b1a",
+  "icons": [
+    {
+      "src": "/Jetlag/icon.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
